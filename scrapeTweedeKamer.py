@@ -22,18 +22,18 @@ headers = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KH
 
 def scrapeTweedeKamer():
 	#getHandelingen()
-	#li_input = [file for file in os.listdir('data/politiek/handelingen/xml_dump/')]
+	#li_input = [file for file in os.listdir('data/politiek/handelingen/xml/')]
 	#print(li_input)
 	#li_input = [file for file in li_input if file.startswith('h-tk-2015') or file.startswith('h-tk-2016') or file.startswith('h-tk-2017') or file.startswith('h-tk-2018')]
 	#getMetaData(li_input)
-	# getHandelingen()
-	TweedeKamerToCsv()
+	getHandelingen()
+	#TweedeKamerToCsv()
 	# li_input = [file for file in os.listdir('data/politiek/kamervragen/') if file.endswith('.p')]
 	# print(li_input)
 	# getMetaData(li_input)
 	
 	
-def getHandelingen(year = 2015, vol = 1):
+def getHandelingen(year = 2014, vol = 1):
 	"""
 	Collects all the Tweede Kamer handelingen from officielebekendmakingen.nl
 	year: the starting year of the loop
@@ -55,7 +55,7 @@ def getHandelingen(year = 2015, vol = 1):
 	while years_left:
 
 		# docname = 'h-tk-' + str(year) + str(year + 1) + '-' + str(vol) + '-' + str(doc) + '.p'
-		# if os.path.isfile('data/politiek/handelingen/xml_dump/' + docname) and (vol != 1 and doc != 1):
+		# if os.path.isfile('data/politiek/handelingen/xml/' + docname) and (vol != 1 and doc != 1):
 		# 	print('Document ' + docname + ' already exists')
 		# else:
 
@@ -143,13 +143,13 @@ def getHandelingen(year = 2015, vol = 1):
 
 							file = response.read()
 							
-							if not os.path.exists('data/politiek/handelingen/xml_dump/'):
-								os.makedirs('data/politiek/handelingen/xml_dump/')
+							if not os.path.exists('data/politiek/handelingen/xml/'):
+								os.makedirs('data/politiek/handelingen/xml/')
 							
 							di_handelingen = xmltodict.parse(file)
 							#print(di_handelingen)
-							print('data/politiek/handelingen/xml_dump/' + document_name + '.p')
-							p.dump(di_handelingen, open('data/politiek/handelingen/xml_dump/' + document_name + '.p', 'wb'))
+							print('data/politiek/handelingen/xml/' + document_name + '.p')
+							p.dump(di_handelingen, open('data/politiek/handelingen/xml/' + document_name + '.p', 'wb'))
 
 					dossier_no = dossier_no + 1
 					print('Dossier no:', dossier_no)
@@ -205,12 +205,12 @@ def getHandelingen(year = 2015, vol = 1):
 					
 					file = response.read()
 					
-					if not os.path.exists('data/politiek/handelingen/xml_dump/'):
-						os.makedirs('data/politiek/handelingen/xml_dump/')
+					if not os.path.exists('data/politiek/handelingen/xml/'):
+						os.makedirs('data/politiek/handelingen/xml/')
 					
 					try:
 						di_handelingen = xmltodict.parse(file)
-						p.dump(di_handelingen, open('data/politiek/handelingen/xml_dump/' + document_name + '.p', 'wb'))
+						p.dump(di_handelingen, open('data/politiek/handelingen/xml/' + document_name + '.p', 'wb'))
 						print(di_handelingen)
 
 					except ExpatError as e:
