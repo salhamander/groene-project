@@ -1,0 +1,180 @@
+import sys
+import pandas as pd
+import numpy as np
+import matplotlib
+import matplotlib.pyplot as plt
+import time
+import re
+import os
+from datetime import date, datetime, timedelta
+from collections import OrderedDict
+from matplotlib.ticker import ScalarFormatter
+
+def createHistogram(df, querystring='', time_column='datum', time_format='years', include_normalised=False):
+
+	querystring = querystring.replace('|', ' OR ')
+
+	df = df.sort_values(by=[time_column])
+
+	# Set cut-off for yyyy-mm-dd format to filter on month or day
+	endstring = 10
+	if time_format == 'years':
+		endstring = 4
+	elif time_format == 'months':
+		endstring = 7
+	elif time_format == 'days':
+		endstring = 10
+
+	li_dates = [date[0:endstring] for date in df[time_column]]
+	li_timeticks = []
+
+	dateformat = '%d-%m-%y'
+
+	df_histo = pd.DataFrame()
+	df['date_histo'] = li_dates
+	df = df.groupby(by=['date_histo']).agg(['count'])
+
+	# Create new list of all dates between start and end date
+	# Sometimes one date has zero counts, and gets skipped by matplotlib
+	li_dates = []
+	li_check_dates = []
+
+	if time_format == 'years':
+		d1 = datetime.strptime(df.index[0], "%Y").date()  			# start date
+		d2 = datetime.strptime(df.index[len(df) - 1], "%Y").date()	# end date
+		delta = d2 - d1													# timedelta
+		for i in range(delta.days + 1):
+			date = d1 + timedelta(days=i)
+			date = str(date)[:endstring]
+			if date not in li_dates:
+				li_dates.append(date)
+				li_check_dates.append(date)
+
+	elif time_format == 'months':
+		d1 = datetime.strptime(df.index[0], "%Y-%m").date()  			# start date
+		d2 = datetime.strptime(df.index[len(df) - 1], "%Y-%m").date()	# end date
+		delta = d2 - d1													# timedelta
+		for i in range(delta.days + 1):
+			date = d1 + timedelta(days=i)
+			date = str(date)[:endstring]
+			if date not in li_dates:
+				li_dates.append(date)
+				li_check_dates.append(date)
+		
+	if time_format == 'days':
+		d1 = datetime.strptime(df.index[0], "%Y-%m-%d").date()			# start date
+		d2 = datetime.strptime(df.index[len(df) - 1], "%Y-%m-%d").date()# end date
+		# print(d1, d2)
+		delta = d2 - d1         										# timedelta
+		for i in range(delta.days + 1):
+			date_object = d1 + timedelta(days=i)
+			str_date = date_object.strftime('%Y-%m-%d')
+			li_dates.append(date_object)
+			li_check_dates.append(str_date)
+
+	# Create list of counts. 0 if it does not appears in previous DataFrame
+	li_counts = [0 for i in range(len(li_dates))]
+	li_index_dates = df.index.values.tolist()
+	for index, indate in enumerate(li_check_dates):
+		# print(indate)
+		if indate in li_index_dates and df.loc[indate][1] > 0:
+			li_counts[index] = df.loc[indate][1]
+		else:
+			li_counts[index] = 0
+
+	print(li_index_dates)
+	
+	df_histo['date'] = li_dates
+	df_histo['count'] = li_counts
+
+	#create list of average counts
+	if include_normalised:
+		li_av_count = []
+		for i in range(len(df_histo)):
+			av_count = (df_histo['id'][i] / di_totalcomment[df_histo['date'][i]]) * 100
+			li_av_count.append(av_count)
+
+		df_histo['av_count'] = li_av_count
+
+	if not os.path.exists('data/'):
+		os.makedirs('data/')
+
+	print(df_histo.head())
+	print('Writing raw data to "' + 'data/histogram_data_' + querystring + '.csv')
+	# Safe the metadata
+	df_histo.to_csv('data/histogram_data_' + querystring + '.csv', index=False)
+
+	print('Making histogram...')
+
+	# Plot the graph!
+	fig, ax = plt.subplots(1,1)
+	fig = plt.figure(figsize=(12, 8))
+	fig.set_dpi(100)
+	ax = fig.add_subplot(111)
+
+	#ax2 = ax.twinx()
+	if time_format == 'years':
+		ax.xaxis.set_major_locator(matplotlib.dates.YearLocator())
+		ax.xaxis.set_major_formatter(matplotlib.dates.DateFormatter(dateformat))
+	elif time_format == 'days':
+		ax.xaxis.set_major_locator(matplotlib.dates.DayLocator())
+		ax.xaxis.set_major_formatter(matplotlib.dates.DateFormatter(dateformat))
+	elif time_format == 'months':
+		ax.xaxis.set_major_locator(matplotlib.dates.MonthLocator())
+		ax.xaxis.set_major_formatter(matplotlib.dates.DateFormatter(dateformat))
+
+	ax.get_yaxis().set_major_formatter(plt.FuncFormatter(lambda x, loc: "{:,}".format(int(x))))
+	
+	df_histo.plot(ax=ax, y='count', kind='bar', legend=False, width=.9, color='#52b6dd');
+	#df_histo.plot(ax=ax2, y='av_count', legend=False, kind='line', linewidth=2, color='#d12d04');
+	ax.set_axisbelow(True)
+	# ax.set_xticks(xticks)
+	ax.set_xticklabels(df_histo['date'], rotation='vertical')
+	ax.grid(color='#e5e5e5',linestyle='dashed', linewidth=.6)
+	ax.set_ylabel('Absolute amount', color='#52b6dd')
+	#ax2.set_ylabel('Percentage of total comments', color='#d12d04')
+	#ax2.set_ylim(bottom=0)
+
+	# Reduce tick labels when there's more a lot of day dates:
+	if time_format == 'days' and len(set(li_dates)) > 50:
+		for index, label in enumerate(ax.xaxis.get_ticklabels()):
+			#print(label)
+			if label.get_text().endswith('-01'):
+				label.set_visible(True)
+			else:
+				label.set_visible(False)
+
+	if time_format == 'months' and len(set(li_dates)) > 50:
+		for index, label in enumerate(ax.xaxis.get_ticklabels()):
+			#print(label)
+			if label.get_text().endswith('-01'):
+				label.set_visible(True)
+			else:
+				label.set_visible(False)
+
+	# Reduce tick labels when there's more a lot of day dates:
+	# if time_format == 'years' and len(set(li_dates)) > 50:
+	# 	for index, label in enumerate(ax.xaxis.get_ticklabels()):
+	# 		#print(label)
+	# 		if label.get_text().endswith('-01'):
+	# 			label.set_visible(True)
+	# 		else:
+	# 			label.set_visible(False)
+
+	plt.title('Posts containing "' + querystring + '"')
+
+	print('Saving svg file as "img/histogram_' + querystring + '_' + time_format + '.svg"')
+	plt.savefig('img/histogram_' + querystring + '_' + time_format + '.svg', dpi='figure',bbox_inches='tight')
+	print('Saving png file as "img/histogram_' + querystring + '.png"')
+	plt.savefig('img/histogram_' + querystring + '_' + time_format + '.png', dpi='figure',bbox_inches='tight')
+
+	print('Done! Saved .csv of data and .png & .svg in folder \'img/\'')
+
+df = pd.read_csv('data/politiek/handelingen/handelingen-v1.csv')
+df = df[df['tekst'].str.contains('buitenlander|allochtoon|migrant', na=False)]
+#print(df['tekst'].tolist())
+
+print(df.head())
+print(df.columns)
+print('Mentions: ', len(df))
+createHistogram(df, querystring='buitenlander|allochtoon|migrant', time_format='years')
