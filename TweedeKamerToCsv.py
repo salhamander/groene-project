@@ -30,7 +30,7 @@ def TweedeKamerToCsv():
 	is_handeling = True
 
 	if is_handeling:
-		for handeling in os.listdir('data/politiek/handelingen/xml_dump/'):
+		for handeling in os.listdir('data/politiek/handelingen/xml/'):
 
 			#if handeling.startswith('h-tk-19951996-1'):
 			if handeling.endswith('.p') and handeling.startswith('h-tk-'):
@@ -42,7 +42,7 @@ def TweedeKamerToCsv():
 
 				print('Getting values for ' + handeling)
 				# Get all the relvant data from the xml->dict files
-				di_handeling = p.load(open('data/politiek/handelingen/xml_dump/' + handeling, 'rb'))
+				di_handeling = p.load(open('data/politiek/handelingen/xml/' + handeling, 'rb'))
 
 				# Load metadata for date
 				#if os.path.isfile('data/politiek/handelingen/metadata/metadata-' + handeling):
@@ -304,14 +304,15 @@ def getValues(di_input, is_text_dict=False):
 
 					# get the spreker
 					spreker = di_text['spreker']
-					print(spreker)
+					#print(spreker)
 					if isinstance(spreker['naam'], collections.OrderedDict):
 						naam = spreker['naam']['achternaam']
 					elif isinstance(spreker['naam'], list):
 						naam = spreker['naam'][0]['achternaam']
 					else:
 						print('Invalid name format',spreker)
-					aanhef = spreker['voorvoegsels']
+					if 'voorvoegsels' in aanhef:
+						aanhef = spreker['voorvoegsels']
 					li_sprekers.append(naam)
 					li_aanhef.append(aanhef)
 
