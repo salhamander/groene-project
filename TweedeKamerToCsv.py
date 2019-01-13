@@ -311,7 +311,7 @@ def getValues(di_input, is_text_dict=False):
 						naam = spreker['naam'][0]['achternaam']
 					else:
 						print('Invalid name format',spreker)
-					if 'voorvoegsels' in aanhef:
+					if 'voorvoegsels' in spreker:
 						aanhef = spreker['voorvoegsels']
 					li_sprekers.append(naam)
 					li_aanhef.append(aanhef)
@@ -391,3 +391,4 @@ def countHandelingenPerYear():
 
 if __name__ == "__main__":
 	countHandelingenPerYear()
+	TweedeKamerToCsv()
