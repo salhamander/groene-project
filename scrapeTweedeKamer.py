@@ -356,5 +356,5 @@ def getMetaData(li_input):
 					di_kamervragen = xmltodict.parse(file)
 					print(di_kamervragen)
 	
-
-scrapeTweedeKamer()
+if __name__ == 'main':
+	scrapeTweedeKamer()
