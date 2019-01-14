@@ -13,7 +13,7 @@ def getTokens(li_strings, stemming=False, lemmatizing=False):
 
 	if stemming:
 		global di_stems
-		di_stems = p.load(open('di_stems.p', 'rb'))
+		di_stems = p.load(open('data/di_stems.p', 'rb'))
 
 	print('imported')
 	
@@ -39,7 +39,7 @@ def getTokens(li_strings, stemming=False, lemmatizing=False):
 	print(len(li_comments_stemmed))
 
 	if stemming:
-		p.dump(di_stems, open('di_stems.p', 'wb'))
+		p.dump(di_stems, open('data/di_stems.p', 'wb'))
 		df_stems = pd.DataFrame.from_dict(di_stems, orient='index')
 		df_stems.to_csv('di_stems_dataframe.csv', encoding='utf-8')
 
@@ -97,11 +97,11 @@ def getFilteredText(string, stemming=False, lemmatizing=False):
 
 	return li_filtered_tokens
 
-#if __name__ == '__main__':
-df = pd.read_csv('handelingen-v1.csv')
-df = df[df['datum'].str.contains('2007|2008|2009|2010')]
-tokens = df['tekst'].tolist()
-tokens = tokens
-print(len(tokens))
-tokens = getTokens(tokens, stemming=True, lemmatizing=False)
-p.dump(tokens, open('data/politiek/handelingen/tokens/tokens_handelingen_20072010.p', 'wb'))
+if __name__ == '__main__':
+	df = pd.read_csv('all-handelingen.csv')
+	df = df[df['datum'].str.contains('2007|2008|2009|2010')]
+	tokens = df['tekst'].tolist()
+	tokens = tokens
+	print(len(tokens))
+	tokens = getTokens(tokens, stemming=True, lemmatizing=False)
+	p.dump(tokens, open('data/politiek/handelingen/tokens/tokens_handelingen_20072010.p', 'wb'))

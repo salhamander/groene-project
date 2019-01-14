@@ -24,73 +24,58 @@ from nltk.corpus import stopwords
 # full db: 4plebs_pol_18_03_2018
 # full table: poldatabase_18_03_2018
 
-def calculateColocation(inputtokens, windowsize, nsize, querystring, fullcomment, frequencyfilter, outputlimit, matchword=''):
+def calculateColocation(inputtokens, windowsize, nsize, querystring, fullcomment=False, min_frequency=1, max_output=100, matchword=''):
 	#guide here http://www.nltk.org/howto/collocations.html
 	#generate bigrams
-	print(inputtokens[:10])
+	#print(inputtokens[:10])
+
+	tokens = []
+	for spreekbeurt in inputtokens:
+		if querystring in spreekbeurt:
+			tokens.append(spreekbeurt)
+	tokens = list(itertools.chain.from_iterable(tokens))
+	#print(tokens[:10])
+
 	if matchword == '':
 		matchword = querystring
 	if nsize == 1:
-		finder = BigramCollocationFinder.from_words(inputtokens, window_size=windowsize)
+		finder = BigramCollocationFinder.from_words(tokens, window_size=windowsize)
 		#filter on bigrams that only contain the query string
 		if fullcomment == False:
 			word_filter = lambda w1, w2: matchword not in (w1, w2)
 			finder.apply_ngram_filter(word_filter)
 	#generate trigrams
 	if nsize == 2:
-		finder = TrigramCollocationFinder.from_words(inputtokens, window_size=windowsize)
+		finder = TrigramCollocationFinder.from_words(tokens, window_size=windowsize)
 		#filter on trigrams that only contain the query string
 		if fullcomment == False:
 			word_filter = lambda w1, w2, w3: matchword not in (w1, w2, w3)
 			finder.apply_ngram_filter(word_filter)
 
-			finder.apply_freq_filter(frequencyfilter)
+			finder.apply_freq_filter(min_frequency)
 
-	colocations = sorted(finder.ngram_fd.items(), key=operator.itemgetter(1), reverse=True)[0:outputlimit]
-	print(colocations[:10])
+	colocations = sorted(finder.ngram_fd.items(), key=operator.itemgetter(1), reverse=True)[0:max_output]
+	#print(colocations[:10])
 	return colocations
 
-def createColocationCsv(inputcolocations):
+def createColocationDf(inputcolocations):
 	
-	columns = []
+	# To do: make this work with trigrams
 	df = pd.DataFrame()
+	df['first_word'] = [tpl[0][0] for tpl in inputcolocations]
+	df['second_word'] = [tpl[0][1] for tpl in inputcolocations]
+	df['frequency'] = [tpl[1] for tpl in inputcolocations]
 
-	for key, values in inputcolocations.items():
-		li_colocations = []
-		li_mentions = []
-		mentions = 0
-		columns.append(key)
-		columns.append('mentions')
-
-		for colocation_tuple in values:
-			str_colocations = ''
-			#loop through tuple with colocation words and frequency (at the end)
-			for index, tuple_value in enumerate(colocation_tuple):
-				
-				if type(tuple_value) is tuple:
-					for string in tuple_value:
-						str_colocations = str_colocations + ' ' + string
-				else:
-					mentions = tuple_value
-
-			li_colocations.append(str_colocations)
-			li_mentions.append(mentions)
-
-		tmp_df = pd.DataFrame()
-		tmp_df[key] = li_colocations
-		tmp_df['mentions'] = li_mentions
-		df = pd.concat([df, tmp_df], axis=1)
-		
 	print(df)
 	return(df)
 
 def getHandelingenCollocations():
 	tokens = p.load(open('data/politiek/handelingen/tokens/tokens_handelingen_20072010.p', 'rb'))
 	tokens = list(itertools.chain.from_iterable(tokens))
-	colocations = calculateColocation(tokens, 10, 2, 'islam', fullcomment=False, frequencyfilter=10, outputlimit=10)
+	colocations = calculateColocation(tokens, 10, 2, 'islam', fullcomment=False, frequencyfilter=10, max_output=10)
 
 	print('Generating RankFlow-capable csv of colocations')
-	rankflow_df = createColocationCsv(colocations)
+	rankflow_df = createColocationDf(colocations)
 	rankflow_df.to_csv('colocations/islam-colocations-.csv')
 
 	print('Writing restults to textfile')
@@ -142,4 +127,19 @@ def getTweetCollocations(word):
 	tweets = [tweet[20] for tweet in results]
 	getHashTags(tweets)
 
-getTweetCollocations('islam')
+
+if __name__ == '__main__':
+
+	years = [2015,2016,2017,2018]
+	li_tokens = []
+	for year in years:
+		tokens = p.load(open('data/politiek/handelingen/tokens/tokens_handelingen_' + str(year) + str(year + 1) + '.p', 'rb'))
+		li_tokens.append(tokens)
+		#print(tokens[:10])
+
+	li_tokens = list(itertools.chain.from_iterable(li_tokens))
+	
+	collocations = calculateColocation(li_tokens, 3, 1, 'nederlander', min_frequency=10)
+	print(collocations)
+	df = createColocationDf(collocations)
+	df.to_csv('bigrams-nederlander-20152018.csv')

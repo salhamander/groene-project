@@ -22,18 +22,20 @@ headers = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KH
 
 def scrapeTweedeKamer():
 	#getHandelingen()
-	#li_input = [file for file in os.listdir('data/politiek/handelingen/xml/')]
-	#print(li_input)
-	#li_input = [file for file in li_input if file.startswith('h-tk-2015') or file.startswith('h-tk-2016') or file.startswith('h-tk-2017') or file.startswith('h-tk-2018')]
-	#getMetaData(li_input)
-	getHandelingen()
+	li_xml = [file for file in os.listdir('data/politiek/handelingen/xml/')]
+	li_metadata = [file for file in os.listdir('data/politiek/handelingen/metadata/')]
+	li_input = [file for file in li_xml if 'metadata-' + file not in li_metadata]
+	print(len(li_input))
+	getMetaData(li_input)
+
+	#getHandelingen()
 	#TweedeKamerToCsv()
 	# li_input = [file for file in os.listdir('data/politiek/kamervragen/') if file.endswith('.p')]
 	# print(li_input)
 	# getMetaData(li_input)
 	
 	
-def getHandelingen(year = 2014, vol = 1):
+def getHandelingen(year = 1996, vol = 95):
 	"""
 	Collects all the Tweede Kamer handelingen from officielebekendmakingen.nl
 	year: the starting year of the loop
@@ -48,7 +50,7 @@ def getHandelingen(year = 2014, vol = 1):
 	doc = 1
 
 	# Starting dossier number
-	dossier_no = 1
+	dossier_no = vol
 	dossiers = True
 
 	# loop through all pages listing 30 documents	
@@ -62,7 +64,6 @@ def getHandelingen(year = 2014, vol = 1):
 		# Document numbers are different before 2011, as they rely on page numbers
 
 		if year < 2011:
-
 
 			# For loop through the dossier numbers for the year
 			dossier_url = 'https://zoek.officielebekendmakingen.nl/handelingen/TK/' + str(year) + '-' + str(year + 1) + '/' + str(dossier_no)
@@ -98,9 +99,13 @@ def getHandelingen(year = 2014, vol = 1):
 	
 				# Check if it's not a 404 HTML page
 				if not anchors:
-					year = year + 1
-					dossier_no = 1
-					print('No dossiers found for this year. Continuing to ' + str(year))
+					# Workaround for empty doc in 1997 (https://zoek.officielebekendmakingen.nl/handelingen/TK/1997-1998/11)
+					if (year == 1997 and dossier_no == 11):
+						dossier_no = dossier_no + 1
+					else:
+						dossier_no = 1
+						year = year + 1
+						print('No dossiers found for this year. Continuing to ' + str(year))
 				
 				# If the dossier exists and has documents, get the xml urls and save them as pickled dictonaries
 				else:
