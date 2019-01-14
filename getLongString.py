@@ -1,5 +1,8 @@
 import pandas as pd
 
+
+getLongString
+
 df = pd.read_csv('handelingen-v1.csv')
 print(df.columns)
 
