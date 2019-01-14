@@ -28,6 +28,10 @@ def scrapeTweedeKamer():
 	print(len(li_input))
 	getMetaData(li_input)
 
+	#li_input = [file for file in os.listdir('data/politiek/handelingen/xml/')]
+	#print(li_input)
+	#li_input = [file for file in li_input if file.startswith('h-tk-2015') or file.startswith('h-tk-2016') or file.startswith('h-tk-2017') or file.startswith('h-tk-2018')]
+	#getMetaData(li_input)
 	#getHandelingen()
 	#TweedeKamerToCsv()
 	# li_input = [file for file in os.listdir('data/politiek/kamervragen/') if file.endswith('.p')]

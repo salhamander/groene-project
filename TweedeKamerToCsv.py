@@ -335,6 +335,7 @@ def getValues(di_input, is_text_dict=False):
 								aanhef = spreker['voorvoegsels']
 							else:
 								aanhef = ''
+
 					li_sprekers.append(naam)
 					li_aanhef.append(aanhef)
 
@@ -431,3 +432,4 @@ if __name__ == "__main__":
 	# 	print(len(tokens))
 	# 	tokens = getTokens.getTokens(tokens, stemming=True, lemmatizing=False)
 	# 	p.dump(tokens, open('data/politiek/handelingen/tokens/tokens_handelingen_' + year + str(int(year) + 1) + '.p', 'wb'))
+	TweedeKamerToCsv()
