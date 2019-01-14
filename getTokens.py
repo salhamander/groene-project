@@ -14,7 +14,7 @@ def getTokens(li_strings, stemming=False, lemmatizing=False):
 
 	if stemming:
 		global di_stems
-		di_stems = p.load(open('di_stems.p', 'rb'))
+		di_stems = p.load(open('data/di_stems.p', 'rb'))
 
 	print('imported')
 	
@@ -40,7 +40,7 @@ def getTokens(li_strings, stemming=False, lemmatizing=False):
 	print(len(li_comments_stemmed))
 
 	if stemming:
-		p.dump(di_stems, open('di_stems.p', 'wb'))
+		p.dump(di_stems, open('data/di_stems.p', 'wb'))
 		df_stems = pd.DataFrame.from_dict(di_stems, orient='index')
 		df_stems.to_csv('di_stems_dataframe.csv', encoding='utf-8')
 
@@ -99,6 +99,7 @@ def getFilteredText(string, stemming=False, lemmatizing=False):
 	return li_filtered_tokens
 
 if __name__ == '__main__':
+	
 	df = pd.read_csv('data/media/kranten/islam-moslim-moslims-atleast5-allpapers.csv')
 
 	years = years = ['1995','1996','1997','1998','1999','2000','2001','2002','2003','2004','2005','2006','2007','2008','2009','2010','2011','2012','2013','2014','2015','2016','2017','2018']

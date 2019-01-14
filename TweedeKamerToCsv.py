@@ -4,7 +4,9 @@ import pprint
 import collections
 import os
 import xmltodict
+import getTokens
 from sqlalchemy import create_engine
+
 
 def TweedeKamerToCsv():
 	'''
@@ -33,7 +35,7 @@ def TweedeKamerToCsv():
 		for handeling in os.listdir('data/politiek/handelingen/xml/'):
 
 			#if handeling.startswith('h-tk-19951996-1'):
-			if handeling.endswith('.p') and handeling.startswith('h-tk-'):
+			if handeling.endswith('.p') and handeling.startswith('h-'):
 
 				# DEBUGGING
 				# handeling = 'h-tk-20102011-100-1.p'
@@ -131,8 +133,11 @@ def getValues(di_input, is_text_dict=False):
 			# Get the title
 			#print(key)
 			if key == 'itemnaam':
-				if len(value) > 0:
-					title = value
+				title = value
+				# else:
+				# 	print(title, type(title))
+				# 	quit()
+				# 	title = ''
 
 			if key == 'spreker':
 				#print(value['spreker'])
@@ -304,21 +309,42 @@ def getValues(di_input, is_text_dict=False):
 
 					# get the spreker
 					spreker = di_text['spreker']
-					#print(spreker)
-					if isinstance(spreker['naam'], collections.OrderedDict):
-						naam = spreker['naam']['achternaam']
-					elif isinstance(spreker['naam'], list):
-						naam = spreker['naam'][0]['achternaam']
+					
+					# There's quite some different naam formats through the years,
+					# so it needs quite some 'if's
+					if isinstance(spreker, list):
+						naam = spreker
 					else:
-						print('Invalid name format',spreker)
-					if 'voorvoegsels' in spreker:
-						aanhef = spreker['voorvoegsels']
+						if isinstance(spreker, str):
+							naam = spreker
+							aanhef = ''
+						else:
+							#print(spreker)
+							if isinstance(spreker, collections.OrderedDict):
+								if 'naam' in spreker:
+									if isinstance(spreker['naam'], list):
+										naam = spreker['naam'][0]['achternaam']
+									else:
+										naam = spreker['naam']['achternaam']
+								elif '#text' in spreker:
+									naam = spreker['#text']
+								else:
+									print('Invalid name format',spreker)
+									quit()
+							if 'voorvoegsels' in spreker:
+								aanhef = spreker['voorvoegsels']
+							else:
+								aanhef = ''
+
 					li_sprekers.append(naam)
 					li_aanhef.append(aanhef)
 
 					# Get the partij
-					if 'politiek' in di_text['spreker'].keys():
-						partij = di_text['spreker']['politiek']
+					if not isinstance(spreker, str):
+						if 'politiek' in di_text['spreker'].keys():
+							partij = di_text['spreker']['politiek']
+						else:
+							partij = 'geen'
 					else:
 						partij = 'geen'
 					li_partijen.append(partij)
@@ -328,14 +354,19 @@ def getValues(di_input, is_text_dict=False):
 
 					# Some spreekbeurten consists of multiple paragraphs.
 					# In this case, they are 'al-groep's. Loop and join as string:
+					
 					if 'al-groep' in text[0]:
 						# Clean the al-groep lists and dicts
 						clean_al = ''
 						cleanAlGroep(text[0])
-
 						text = clean_al
 					else:
-						text = text[0]['al']
+						while isinstance(text, list):
+							text = text[0]
+						print(text)
+						if 'al-groep' in text:
+							text = text['al-groep']
+						text = text['al']
 
 					# Some further parsing for stemmingen and moties
 					if isinstance(text, list):
@@ -390,4 +421,14 @@ def countHandelingenPerYear():
 
 if __name__ == '__main__':
 	countHandelingenPerYear()
+	#TweedeKamerToCsv()
+
+	# df = pd.read_csv('handelingen-v2.csv')
+	# years = ['2000','2017','2018']
+	# for year in years:
+	# 	df_date = df[df['datum'].str.contains(year)]
+	# 	tokens = df_date['tekst'].tolist()
+	# 	print(len(tokens))
+	# 	tokens = getTokens.getTokens(tokens, stemming=True, lemmatizing=False)
+	# 	p.dump(tokens, open('data/politiek/handelingen/tokens/tokens_handelingen_' + year + str(int(year) + 1) + '.p', 'wb'))
 	TweedeKamerToCsv()
