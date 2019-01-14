@@ -1,6 +1,7 @@
 import re
 import pickle as p
 import pandas as pd
+
 from nltk.corpus import stopwords
 from nltk.stem.snowball import SnowballStemmer
 from nltk.stem.wordnet import WordNetLemmatizer
@@ -98,10 +99,16 @@ def getFilteredText(string, stemming=False, lemmatizing=False):
 	return li_filtered_tokens
 
 if __name__ == '__main__':
-	df = pd.read_csv('all-handelingen.csv')
-	df = df[df['datum'].str.contains('2007|2008|2009|2010')]
-	tokens = df['tekst'].tolist()
-	tokens = tokens
-	print(len(tokens))
-	tokens = getTokens(tokens, stemming=True, lemmatizing=False)
-	p.dump(tokens, open('data/politiek/handelingen/tokens/tokens_handelingen_20072010.p', 'wb'))
+	
+	df = pd.read_csv('data/media/kranten/islam-moslim-moslims-atleast5-allpapers.csv')
+
+	years = years = ['1995','1996','1997','1998','1999','2000','2001','2002','2003','2004','2005','2006','2007','2008','2009','2010','2011','2012','2013','2014','2015','2016','2017','2018']
+	print(set(df['date_formatted'].tolist()))
+	quit()
+	for year in years:
+
+		df_date = df[df['date_formatted'].str.contains(year, NaN=False)]
+		tokens = df_date['tekst'].tolist()
+		print(len(tokens))
+		tokens = getTokens(tokens, stemming=True, lemmatizing=False)
+		p.dump(tokens, open('data/media/kranten/tokens_' + year + '-islam-moslim-moslims-atleast5-allpapers.p', 'wb'))

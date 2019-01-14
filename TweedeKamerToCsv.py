@@ -410,7 +410,6 @@ def cleanAlGroep(text_input):
 		for v in text_input:
 			cleanAlGroep(v)
 
-
 def countHandelingenPerYear():
 	start_year = 1995
 
@@ -420,7 +419,7 @@ def countHandelingenPerYear():
 		print(str(i) + ' handelingen in ' + (str(start_year) + str(start_year + 1)))
 		start_year = start_year + 1
 
-if __name__ == "__main__":
+if __name__ == '__main__':
 	countHandelingenPerYear()
 	#TweedeKamerToCsv()
 
