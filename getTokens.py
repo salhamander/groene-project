@@ -1,50 +1,62 @@
 import re
 import pickle as p
 import pandas as pd
-
+import ast
+import os
 from nltk.corpus import stopwords
 from nltk.stem.snowball import SnowballStemmer
 from nltk.stem.wordnet import WordNetLemmatizer
 
 def getTokens(li_strings, stemming=False, lemmatizing=False):
 	"""
-	Self-made tokenizer for chan text
+	Self-made tokenizer Tweede Kamer text.
+	Accepts input as a list of strings and a list of list of strings (paragraphs) 
 
 	"""
-
+	# Get a dict to save the stems of the words for retrieval later
 	if stemming:
 		global di_stems
-		di_stems = p.load(open('data/di_stems.p', 'rb'))
+		if os.path.isfile('data/di_stems.p'):
+			di_stems = p.load(open('data/di_stems.p', 'rb'))
+		else:
+			di_stems = {}
 
 	print('imported')
 	
 	# Do some cleanup: only alphabetic characters, no stopwords
 	# Create separate stemmed tokens, to which the full strings will be compared to:
-	li_comments_stemmed = []
-	len_comments = len(li_strings)
+	li_texts_stemmed = []
+	len_text = len(li_strings)
 	
 	print(len(li_strings))
 	print('Creating list of tokens per monthly document')
 	
-	for index, comment in enumerate(li_strings):
+	for index, text in enumerate(li_strings):
 		
 		# Create list of list for comments and tokens
-		if isinstance(comment, str):
-			li_comment_stemmed = []
-			li_comment_stemmed = getFilteredText(comment, stemming=stemming, lemmatizing=lemmatizing)
-			li_comments_stemmed.append(li_comment_stemmed)
+		if isinstance(text, str):
+			li_text_stemmed = []
+			li_text_stemmed = getFilteredText(text, stemming=stemming, lemmatizing=lemmatizing)
+			li_texts_stemmed.append(li_text_stemmed)
 		
-		if index % 10000 == 0:
-			print('Tokenising finished for string ' + str(index) + '/' + str(len_comments))
+		elif isinstance(text, list):
+			li_text_stemmed = []
+			for single_text in text:
+				single_text = getFilteredText(single_text, stemming=stemming, lemmatizing=lemmatizing)
+				li_text_stemmed.append(single_text)
+			li_texts_stemmed.append(li_text_stemmed)
+
+		if index % 100 == 0:
+			print('Tokenising finished for string ' + str(index) + '/' + str(len_text))
 	
-	print(len(li_comments_stemmed))
+	print(len(li_texts_stemmed))
 
 	if stemming:
 		p.dump(di_stems, open('data/di_stems.p', 'wb'))
 		df_stems = pd.DataFrame.from_dict(di_stems, orient='index')
-		df_stems.to_csv('di_stems_dataframe.csv', encoding='utf-8')
+		df_stems.to_csv('di_stems_dataframe.csv')
 
-	return li_comments_stemmed
+	return li_texts_stemmed
 
 def getFilteredText(string, stemming=False, lemmatizing=False):
 	
@@ -98,17 +110,41 @@ def getFilteredText(string, stemming=False, lemmatizing=False):
 
 	return li_filtered_tokens
 
-if __name__ == '__main__':
+def getNewspaperTokens(path_to_file):
+	''' Prepares the text in a compiled csv of newspaper data
+	as to retrieve tokens '''
+	df = pd.read_csv(path_to_file)
+	li_text = df['full_text'].tolist()
 	
-	df = pd.read_csv('data/media/kranten/islam-moslim-moslims-atleast5-allpapers.csv')
+	all_tokens = []
 
-	years = years = ['1995','1996','1997','1998','1999','2000','2001','2002','2003','2004','2005','2006','2007','2008','2009','2010','2011','2012','2013','2014','2015','2016','2017','2018']
-	print(set(df['date_formatted'].tolist()))
-	quit()
-	for year in years:
+	for i in range(len(df)):
+		#print(df.loc[i])
+		#print(len(li_text[i]))
+		#raw_text = eval(li_text[i])
+		#print(raw_text)
+		raw_text = ['']
+		raw_text = re.split('\"\, \'|\"\, \"|\'\, \"', li_text[i])
+		all_tokens.append(raw_text)
+	
+	all_tokens = getTokens(all_tokens, stemming=True)
+	df['tokens'] = all_tokens
+	df.to_csv(path_to_file[:-4] + '-withtokens.csv')
 
-		df_date = df[df['date_formatted'].str.contains(year, NaN=False)]
-		tokens = df_date['tekst'].tolist()
-		print(len(tokens))
-		tokens = getTokens(tokens, stemming=True, lemmatizing=False)
-		p.dump(tokens, open('data/media/kranten/tokens_' + year + '-islam-moslim-moslims-atleast5-allpapers.p', 'wb'))
+if __name__ == '__main__':
+
+	tokens = getNewspaperTokens('data/media/kranten/all-racisme-racistisch-racist-atleast3.csv')
+	p.dump(tokens, open('data/media/kranten/tokens-all-racisme-racistisch-racist-atleast3.p', 'wb'))
+
+	# df = pd.read_csv('data/media/kranten/islam-moslim-moslims-atleast5-allpapers.csv')
+
+	# years = years = ['1995','1996','1997','1998','1999','2000','2001','2002','2003','2004','2005','2006','2007','2008','2009','2010','2011','2012','2013','2014','2015','2016','2017','2018']
+	# print(set(df['date_formatted'].tolist()))
+	# quit()
+	# for year in years:
+
+	# 	df_date = df[df['date_formatted'].str.contains(year, NaN=False)]
+	# 	tokens = df_date['tekst'].tolist()
+	# 	print(len(tokens))
+	# 	tokens = getTokens(tokens, stemming=True, lemmatizing=False)
+	# 	p.dump(tokens, open('data/media/kranten/tokens_' + year + '-islam-moslim-moslims-atleast5-allpapers.p', 'wb'))

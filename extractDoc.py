@@ -202,5 +202,5 @@ def getKrantenInfo(folder):
 
 #save_as_docx('shit')
 if __name__ == '__main__':
-	#save_as_docx('data/media/kranten/nederlandse-identiteit/')
-	getKrantenInfo('data/media/kranten/nederlandse-identiteit/')
+	save_as_docx('data/media/kranten/racisme-racistisch-racist-atleast3/')
+	getKrantenInfo('data/media/kranten/racisme-racistisch-racist-atleast3/')
