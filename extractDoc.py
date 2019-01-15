@@ -3,6 +3,9 @@ import re
 import os
 import win32com.client as win32
 import pandas as pd
+import getTokens
+import pickle as p
+import time
 from datetime import datetime
 from docx import Document
 from win32com.client import constants
@@ -43,8 +46,9 @@ def getKrantenInfo(folder):
 	is_date = False
 	is_title = False
 	print_para = False
+	prev_para = ''
 
-	for index, file in enumerate(li_files[3:]):
+	for index, file in enumerate(li_files):
 		print(file)
 		
 		source = ''
@@ -114,7 +118,8 @@ def getKrantenInfo(folder):
 						# Only catch the first newspaper header. Sometimes newspaper names appear as in-text headers.
 						# print('newspaper' in li_artikelen[article_no])
 						#print(source,para)
-						if para == li_artikelen[article_no]['newspaper']:
+
+						if para == li_artikelen[article_no]['newspaper'] and ('of' in prev_para and 'DOCUMENTS' in prev_para):
 							is_date = True
 							#print('source')
 
@@ -175,9 +180,12 @@ def getKrantenInfo(folder):
 							# print('Regular text paragraph')
 							# print(para_full)
 
+						prev_para = para_full
+
 					# End of doc
 					if i == (len(document.paragraphs) - 1):
 						print('End of doc')
+
 						print('Writing results to csv')
 						start_of_doc = True
 						df = pd.DataFrame(li_artikelen)
@@ -202,5 +210,12 @@ def getKrantenInfo(folder):
 
 #save_as_docx('shit')
 if __name__ == '__main__':
-	save_as_docx('data/media/kranten/racisme-racistisch-racist-atleast3/')
-	getKrantenInfo('data/media/kranten/racisme-racistisch-racist-atleast3/')
+	
+	getKrantenInfo('data/media/kranten/multicultureel-multiculturele-multiculturalisme/')
+	tokens = getTokens.getNewspaperTokens('data/media/kranten/multicultureel-multiculturele-multiculturalisme/all-data.csv')
+	p.dump(tokens, open('data/media/kranten/tokens-all-multicultureel-multiculturele-multiculturalisme.p', 'wb'))
+	save_as_docx('data/media/kranten/buitenlander-buitenlanders-atleast3/')
+	time.sleep(10)
+	getKrantenInfo('data/media/kranten/buitenlander-buitenlanders-atleast3/')
+	tokens = getTokens.getNewspaperTokens('data/media/kranten/buitenlander-buitenlanders-atleast3/all-data.csv')
+	p.dump(tokens, open('data/media/kranten/tokens-all-buitenlander-buitenlanders-atleast3.p', 'wb'))
