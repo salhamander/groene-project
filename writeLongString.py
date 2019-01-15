@@ -1,8 +1,9 @@
 import pandas as pd
+import re
 
 li_years = [1995,1996,1997,1998,1999,2000,2001,2002,2003,2004,2005,2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016,2017,2018]
 
-def writeLongString(df, querystring='', domain='undefined', text_col='tekst', date_col='datum', timespan=False):
+def writeLongString(df, querystring='', domain='undefined', text_col='tekst', date_col='datum', filter_newspaper='', timespan=False):
 	''' Writes a long text file based on a df.
 	Useful for Word Trees.
 	Can also detect to donwload for a specific or ranges of date/year.'''
@@ -14,6 +15,12 @@ def writeLongString(df, querystring='', domain='undefined', text_col='tekst', da
 		print('Filtering data on whether it contains "' + querystring + '"')
 		df = df[df[text_col].str.contains(querystring, case=False, na=False)]
 		filename = filename + '' + querystring
+
+	# Filter df on newspaper (if applicable)
+	if filter_newspaper != '':
+		print('Filtering newspaper on "' + filter_newspaper + '"')
+		df = df[df['newspaper'].str.contains(filter_newspaper, case=False, na=False)]
+		filename = filename + '' + filter_newspaper
 
 	# Filter df on timespan
 	if timespan != False:
@@ -29,6 +36,16 @@ def writeLongString(df, querystring='', domain='undefined', text_col='tekst', da
 	txtfile_full = open('data/longstrings/' + filename + '.txt', 'w', encoding='utf-8')
 	li_input = df[text_col].tolist()
 
+	# Work with a list of list if it's kranten
+	if domain == 'kranten':
+		raw_text = []
+		for single_text in li_input:
+			single_text = re.split('\"\, \'|\'\, \'|\"\, \"|\'\, \"', single_text)
+			single_text = '\n'.join(single_text)
+			single_text = single_text.replace('[\'','')
+			raw_text.append(single_text)
+		li_input = raw_text
+
 	for item in li_input:
 		if item != 'nan':
 			item = str(item).lower()
@@ -37,5 +54,5 @@ def writeLongString(df, querystring='', domain='undefined', text_col='tekst', da
 	print('Done! Written text file: data/longstrings/' + filename + '.txt')
 
 if __name__ == '__main__':
-	df = pd.read_csv('data/politiek/handelingen/all-handelingen-no-voorzitter.csv')
-	writeLongString(df, querystring='nederlander', domain='politiek', text_col='tekst')
+	df = pd.read_csv('data/media/kranten/all-islam-moslim-moslims-atleast5.csv')
+	writeLongString(df, querystring='', domain='kranten',text_col='full_text')
