@@ -13,7 +13,22 @@ from matplotlib.ticker import ScalarFormatter
 li_handelingen_year = ['1995','1996','1997','1998','1999','2000','2001','2002','2003','2004','2005','2006','2007','2008','2009','2010','2011','2012','2013','2014','2015','2016','2017','2018']
 di_spreekbeurten_year = {'1995': 15307, '1996': 29962, '1997': 35065, '1998': 31306, '1999': 27441, '2000': 30259, '2001': 28454, '2002': 27759, '2003': 27340, '2004': 26221, '2005': 29306, '2006': 26912, '2007': 30040, '2008': 39179, '2009': 29565, '2010': 30557, '2011': 56205, '2012': 58427, '2013': 70284, '2014': 67304, '2015': 71281, '2016': 76531, '2017': 60142, '2018': 83588}
 
-def createHistogram(df, querystring='', time_column='datum', time_format='years', show_partij=False, include_normalised=False):
+def createHistogram(df, querystring='', time_format='years', domain='', show_kranten=False, show_partij=False, include_normalised=False):
+
+	# Set some column headers
+	if domain == 'kranten':
+		time_col = 'date_formatted'
+		text_col = 'full_text'
+	elif domain == 'politiek':
+		time_col = 'datum'
+		text_col = 'tekst'
+
+	# Domain (politcs, newspapers, tweets) needs to be set to asses the data
+	if domain == '':
+		print('Please provide a domain (politcs, newspapers, tweets). Current input: ', domain)
+		quit()
+	else:
+		filename = domain
 
 	if isinstance(querystring, list):
 		querystring = '|'.join(querystring)
@@ -26,9 +41,11 @@ def createHistogram(df, querystring='', time_column='datum', time_format='years'
 	else:
 		filename = querystring
 
-	print('Filtering data on whether it contains ' + filename)
-	df = df.sort_values(by=[time_column])
-	df = df[df['tekst'].str.contains(querystring, case=False, na=False)]
+	# Filter the datasets on whether a specific words appears
+	if querystring != '':
+		print('Filtering data on whether it contains ' + filename)
+		df = df.sort_values(by=[time_col])
+		df = df[df[text_col].str.contains(querystring, case=False, na=False)]
 
 	print('Setting time values correctly for the histogram')
 	# Set cut-off for yyyy-mm-dd format to filter on month or day
@@ -40,7 +57,7 @@ def createHistogram(df, querystring='', time_column='datum', time_format='years'
 	elif time_format == 'days':
 		endstring = 10
 
-	li_dates = [date[0:endstring] for date in df[time_column]]
+	li_dates = [date[0:endstring] for date in df[time_col]]
 	li_timeticks = []
 
 	dateformat = '%d-%m-%y'
@@ -122,61 +139,69 @@ def createHistogram(df, querystring='', time_column='datum', time_format='years'
 
 	print('Making histogram...')
 
-	# Show only some partijen as a stacked bar graph, if applicable.
-	li_formatted_partij = []
+	# If indicated, show only some partijen as a stacked bar graph.
+	if show_partij != False:
+		li_formatted_partij = []
+		if isinstance(show_partij, int):
+			partij_count = Counter(df['partij'].tolist())
+			li_common_partijen = [tpl[0] for tpl in partij_count.most_common(show_partij)]
 
-	if isinstance(show_partij, int):
-		partij_count = Counter(df['partij'].tolist())
-		li_common_partijen = [tpl[0] for tpl in partij_count.most_common(show_partij)]
-
-	for key, row in df.iterrows():
-		if show_partij == False:
-			li_formatted_partij.append('alle')
-		# If only one partij should be highlighted (str)
-		elif isinstance(show_partij, str):
-			if show_partij.lower() == (row['partij'].lower()):
-				li_formatted_partij.append(row['partij'])
-			else:
-				li_formatted_partij.append('overig')
-		# If a range of partijen should be highlighted (list)
-		elif isinstance(show_partij, list):
-			if row['partij'] in show_partij:
-				li_formatted_partij.append(row['partij'])
-			else:
-				li_formatted_partij.append('overig')
-		# If only the top n partijen should be highlighted (int)
-		elif isinstance(show_partij, int):
-			if row['partij'] in li_common_partijen:
-				if row['partij'] == 'geen':
-					li_formatted_partij.append('kabinet')
-				else:
+		for key, row in df.iterrows():
+			# If only one partij should be highlighted (str)
+			if isinstance(show_partij, str):
+				if show_partij.lower() == (row['partij'].lower()):
 					li_formatted_partij.append(row['partij'])
+				else:
+					li_formatted_partij.append('overig')
+			# If a range of partijen should be highlighted (list)
+			elif isinstance(show_partij, list):
+				if row['partij'] in show_partij:
+					li_formatted_partij.append(row['partij'])
+				else:
+					li_formatted_partij.append('overig')
+			# If only the top n partijen should be highlighted (int)
+			elif isinstance(show_partij, int):
+				if row['partij'] in li_common_partijen:
+					if row['partij'] == 'geen':
+						li_formatted_partij.append('kabinet')
+					else:
+						li_formatted_partij.append(row['partij'])
+				else:
+					li_formatted_partij.append('overig')
 			else:
-				li_formatted_partij.append('overig')
-		else:
-			print('Invalid show_partij: ' + str(show_partij))
-			quit()
+				print('Invalid show_partij: ' + str(show_partij))
+				quit()
 
-	df['partij'] = li_formatted_partij
-	# print(set(li_formatted_partij))
-	# print(df)
-	# print(li_av_count)
+		df['partij'] = li_formatted_partij
+		# print(set(li_formatted_partij))
+		# print(df)
+		# print(li_av_count)
 
-	# Add a year column
-	df['year'] = [date[:4] for date in df['datum'].values.tolist()]
-	df = df.groupby(['partij','year']).size().reset_index()
-	#df = df.set_index('year')
-	df.columns = ['partij', 'year', 'size']
+		# Add a year column
+		df['year'] = [date[:4] for date in df['datum'].values.tolist()]
+		df = df.groupby(['partij','year']).size().reset_index()
+		#df = df.set_index('year')
+		df.columns = ['partij', 'year', 'size']
 
-	df.to_csv('data/politiek/streamgraph-data-' + filename + '.csv')
-	df = df.reset_index()
-	df_pivot = df.pivot(index='year', columns='partij', values='size')
+		df.to_csv('data/politiek/streamgraph-data-' + filename + '.csv')
+
+		df = df.reset_index()
+		df = df.pivot(index='year', columns='partij', values='size')
+
+	# Indicate newspapers in stacked bar graph
+	if show_kranten:
+		df['year'] = [date[:4] for date in df[time_col].values.tolist()]
+		df = df.groupby(['newspaper','year']).size().reset_index()
+		#df = df.set_index('year')
+		df.columns = ['newspaper', 'year', 'size']
+		df.to_csv('data/politiek/streamgraph-data-' + filename + '.csv')
+		df = df.reset_index()
+		df = df.pivot(index='year', columns='newspaper', values='size')
 
 	fig, ax = plt.subplots(1,1)
 	fig = plt.figure(figsize=(12, 8))
 	fig.set_dpi(100)
 	ax = fig.add_subplot(111)
-	ax2 = ax.twinx()
 	
 	if time_format == 'years':
 		ax.xaxis.set_major_locator(matplotlib.dates.YearLocator())
@@ -191,8 +216,13 @@ def createHistogram(df, querystring='', time_column='datum', time_format='years'
 
 	#colors = ["#478f79","#853bce","#7de354","#d245bc","#5eaa3b","#5858ce","#d5d840","#5b2575","#60db9e","#d73d77","#c3dd85","#bc72c8","#538746","#747ed0","#d88b2e","#343c6f","#d44530","#67d3d6","#8a2d49","#afd4b5","#3f1d2d","#d4b774","#639dd1","#968a2d","#d693bf","#3f4e1e","#bbc0e0","#793c20","#517988","#d68562","#283831","#d06f7b","#867758","#836079","#d9b9ac"]
 	colors = ["#9a963f","#9968c9","#61ad4e","#c77f3a","#3fadaf"]
-	df_pivot.plot(ax=ax, stacked=True, kind='bar', width=.9, figsize=(10,7), color=colors)
-	df_histo.plot(ax=ax2, y='av_count', legend=False, kind='line', linewidth=2, color='#d12d04');
+
+	if show_kranten != False or show_partij != False:
+		df.plot(ax=ax, stacked=True, kind='bar', width=.9, figsize=(10,7), color=colors)
+	
+	if include_normalised:
+		ax2 = ax.twinx()
+		df_histo.plot(ax=ax2, y='av_count', legend=False, kind='line', linewidth=2, color='#d12d04');
 	
 	#df_histo.plot(ax=ax, stacked=True, y='partij', kind='bar', legend=False, width=.9, color='#52b6dd');
 	#df_histo.plot(ax=ax2, y='av_count', legend=False, kind='line', linewidth=2, color='#d12d04');
@@ -202,8 +232,10 @@ def createHistogram(df, querystring='', time_column='datum', time_format='years'
 	ax.set_xticklabels(df_histo['date'], rotation='vertical')
 	ax.grid(color='#e5e5e5',linestyle='dashed', linewidth=.6)
 	ax.set_ylabel('Absoluut aantal', color=colors[0])
-	ax2.set_ylabel('% van totaal aantal spreekbeurten in TK', color='#d12d04')
-	ax2.set_ylim(bottom=0)
+	
+	if include_normalised:
+		ax2.set_ylabel('% van totaal aantal spreekbeurten in TK', color='#d12d04')
+		ax2.set_ylim(bottom=0)
 
 	# Reduce tick labels when there's more a lot of day dates:
 	if time_format == 'days' and len(set(li_dates)) > 50:
@@ -222,7 +254,11 @@ def createHistogram(df, querystring='', time_column='datum', time_format='years'
 			else:
 				label.set_visible(False)
 
-	plt.title('Aantal spreekbeurten in Tweede Kamer met "' + querystring.replace('|', '" of "') + '"')
+	if domain == 'politiek':
+		histo_title = 'Aantal spreekbeurten in Tweede Kamer met "' + querystring.replace('|', '" of "') + '"'
+	elif domain == 'kranten':
+		histo_title = 'Aantal gearchiveerde artikelen in Nederlandse kranten met "' + querystring.replace('|', '" of "') + '"'
+	plt.title(histo_title)
 
 	print('Saving svg file as "img/histo/histogram_' + filename + '_' + time_format + '.svg"')
 	plt.savefig('img/histo/histogram_' + filename + '_' + time_format + '.svg', dpi='figure',bbox_inches='tight')
@@ -246,9 +282,9 @@ if __name__ == '__main__':
 	# di_spreekbeurten = getSpreekbeurtCount()
 	# print(di_spreekbeurten)
 	# quit()
-	df = pd.read_csv('data/politiek/handelingen/all-handelingen-no-voorzitter.csv')
+	df = pd.read_csv('data/media/kranten/all-islam-moslim-moslims-atleast5.csv')
 	#df = df[df['tekst'].str.contains('islam', na=False, case=False)]
 
-	querystrings = ['zwarte piet']
-	for querystring in querystrings:
-		createHistogram(df, querystring=querystring, time_column='datum', time_format='years', show_partij=4, include_normalised=True)
+	#querystrings = [['nederlandse identiteit','nederlandse waarden'], 'gewone nederlander']
+	#for querystring in querystrings:
+	createHistogram(df, querystring=['moslim','islam'], time_format='years', domain='kranten', show_kranten=True)
