@@ -30,6 +30,7 @@ def save_as_docx(folder):
 				new_file_abs, FileFormat=constants.wdFormatXMLDocument
 			)
 			doc.Close(False)
+			print('Saved ' + file + ' as docx.')
 
 
 def getKrantenInfo(folder):
@@ -40,6 +41,7 @@ def getKrantenInfo(folder):
 	months_en = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december']
 	months_nl = ['januari', 'februari', 'maart', 'april', 'mei', 'juni', 'juli', 'augustus', 'september', 'oktober', 'november', 'december']
 	years = ['1995','1996','1997','1998','1999','2000','2001','2002','2003','2004','2005','2006','2007','2008','2009','2010','2011','2012','2013','2014','2015','2016','2017','2018']
+	sources = ['de volkskrant', 'de telegraaf', 'ad/algemeen dagblad', 'nrc handelsblad']
 
 	li_artikelen = []
 	start_of_doc = False
@@ -83,15 +85,17 @@ def getKrantenInfo(folder):
 
 				#print(para)
 				# New article
-				# If a new '1 of XX DOCUMENTS' is reached, start storing article data
 				if not start_of_doc and 'source: ' in para:
-					print(para.replace('source: ', ''))
+					#print(para.replace('source: ', ''))
 					source = para.replace('source: ', '')
 
+				# If a new '1 of XX DOCUMENTS' is reached, start storing article data
 				if 'of' in para_full and 'DOCUMENTS' in para_full:
 
+					#print(article_no)
 					if article_no >= 0:
 						print('Finished article on paragraph ' + str(i) + '/' + str(len(document.paragraphs)) + ', ' + li_artikelen[article_no]['newspaper'] + ', ' + li_artikelen[article_no]['date_formatted'] + ': ' + li_artikelen[article_no]['title'])
+
 					li_artikelen.append({})
 					article_no = article_no + 1
 					li_artikelen[article_no]['newspaper'] = source
@@ -100,30 +104,24 @@ def getKrantenInfo(folder):
 					start_of_doc = True
 					is_title = False
 					is_date = False
-					#print('new doc')
-					# if print_para:
-					# 	quit()
-					# if para == '38 of 199 documents':
-					# 	print_para = True
-				
+
 				# Only store data after the start of a doc
 				if start_of_doc:
-					#print(para)
 
 					if len(para) > 0:
 						#print(para)
-						if print_para:
-							print(para)
 
 						# Only catch the first newspaper header. Sometimes newspaper names appear as in-text headers.
 						# print('newspaper' in li_artikelen[article_no])
 						#print(source,para)
 
-						if para == li_artikelen[article_no]['newspaper'] and ('of' in prev_para and 'DOCUMENTS' in prev_para):
+						if para in sources and ('of' in prev_para and 'DOCUMENTS' in prev_para):
 							is_date = True
+							li_artikelen[article_no]['newspaper'] = para
 							#print('source')
 
 						elif is_date:
+							#print(para)
 							if 'load-date' in para or '1vetkolom' in para:
 								is_date = True
 							else:
@@ -175,7 +173,8 @@ def getKrantenInfo(folder):
 								#is_title = False
 							# A subtitle is incoming when the title ends with '; ', so set is_title to True again	
 
-						elif is_title == False and len(para) > 0 and para != ' ' and not para_full.endswith(' DOCUMENTS') and 'Time Of Request' not in para_full and 'All Documents:' not in para_full and not para_full.startswith('SECTION: ') and not is_title:
+						elif is_title == False and len(para) > 0 and para != ' ' and not para_full.endswith(' DOCUMENTS') and 'Time Of Request' not in para_full and 'All Documents:' not in para_full and 'LANGUAGE:' not in para_full and 'PUBLICATION-TYPE:' not in para_full and 'All Rights Reserved' not in para_full and not para_full.startswith('SECTION: ') and not para_full.startswith('GRAPHIC: ') and not para_full.startswith('JOURNAL-CODE: ') and not para_full.startswith('LOAD-DATE: ') and not para_full.startswith('Copyright 2') and not is_title:
+
 							li_artikelen[article_no]['full_text'].append(para_full)
 							# print('Regular text paragraph')
 							# print(para_full)
@@ -185,12 +184,19 @@ def getKrantenInfo(folder):
 					# End of doc
 					if i == (len(document.paragraphs) - 1):
 						print('End of doc')
-
 						print('Writing results to csv')
+
+						print(type(li_artikelen[article_no]['full_text']),li_artikelen[article_no]['full_text'])
+						# Join the list of paragraphs with a newline (can be used as paragraph split later)
+						li_artikelen[article_no]['full_text'] = '\n'.join(li_artikelen[article_no]['full_text'])
+						print(type(li_artikelen[article_no]['full_text']),li_artikelen[article_no]['full_text'])
+
 						start_of_doc = True
-						df = pd.DataFrame(li_artikelen)
+
+						# Write to csv
+						columns = ['date','date_formatted','author','newspaper','title','full_text','pagina','length']
+						df = pd.DataFrame(li_artikelen, columns=columns)
 						print(df.head())
-						
 						# Write to file
 						if os.path.isfile(folder + 'all-data.csv'):
 							df.to_csv(folder + 'all-data.csv', mode='a', header=False)
@@ -211,11 +217,7 @@ def getKrantenInfo(folder):
 #save_as_docx('shit')
 if __name__ == '__main__':
 	
-	getKrantenInfo('data/media/kranten/multicultureel-multiculturele-multiculturalisme/')
-	tokens = getTokens.getNewspaperTokens('data/media/kranten/multicultureel-multiculturele-multiculturalisme/all-data.csv')
-	p.dump(tokens, open('data/media/kranten/tokens-all-multicultureel-multiculturele-multiculturalisme.p', 'wb'))
-	save_as_docx('data/media/kranten/buitenlander-buitenlanders-atleast3/')
-	time.sleep(10)
-	getKrantenInfo('data/media/kranten/buitenlander-buitenlanders-atleast3/')
-	tokens = getTokens.getNewspaperTokens('data/media/kranten/buitenlander-buitenlanders-atleast3/all-data.csv')
-	p.dump(tokens, open('data/media/kranten/tokens-all-buitenlander-buitenlanders-atleast3.p', 'wb'))
+	getKrantenInfo('data/media/kranten/moslim-islam/')
+
+	# tokens = getTokens.getNewspaperTokens('data/media/kranten/multicultureel-multiculturele-multiculturalisme/all-data.csv')
+	# p.dump(tokens, open('data/media/kranten/tokens-all-multicultureel-multiculturele-multiculturalisme.p', 'wb'))
