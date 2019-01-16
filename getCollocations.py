@@ -184,7 +184,12 @@ if __name__ == '__main__':
 	li_collocations = []
 	print('Loading tokens')
 
-	querystring = 'vluchteli'
+	querystring = 'vluchtel'
+	di_stems = p.load(open('data/di_stems.p', 'rb'))
+	if querystring not in di_stems:
+		print(querystring + ' not in di_stems')
+		print('Similarities:', [k for k, v in di_stems.items() if k.startswith(querystring[:4])])
+		quit()
 
 	for years in li_years:
 		li_tokens = []
