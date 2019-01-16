@@ -8,6 +8,7 @@ import operator
 import pickle as p
 import itertools
 import mysql.connector
+from helpers import getPolitiekTokens, getKrantTokens, getStem
 from datetime import datetime, timedelta
 from collections import OrderedDict
 from nltk.collocations import *
@@ -181,26 +182,14 @@ if __name__ == '__main__':
 	li_years = [[1995,1996,1997,1998,1999],[2000,2001,2002,2003,2004],[2005,2006,2007,2008,2009],[2010,2011,2012,2013,2014],[2015,2016,2017,2018]]
 
 	#li_years = [[1999],[2000],[2001]]
-	li_collocations = []
 	print('Loading tokens')
 
-	querystring = 'vluchtel'
-	di_stems = p.load(open('data/di_stems.p', 'rb'))
-	if querystring not in di_stems:
-		print(querystring + ' not in di_stems')
-		print('Similarities:', [k for k, v in di_stems.items() if k.startswith(querystring[:4])])
-		quit()
+	querystring = getStem('allochton')
 
+	li_collocations = []
 	for years in li_years:
-		li_tokens = []
-		for year in years:
-			tokens = p.load(open('data/politiek/handelingen/tokens/tokens_handelingen_' + str(year) + str(year + 1) + '.p', 'rb'))
-			li_tokens.append(tokens)
-			#print(tokens[:1])
-
-		li_tokens = list(itertools.chain.from_iterable(li_tokens))
+		li_tokens = getPolitiekTokens(years, contains_word=querystring)
 		collocations = calculateColocation(li_tokens, 3, 1, querystring, min_frequency=10)
-		
 		li_collocations.append(collocations)
 
 	df = createRankfFlowDf(li_collocations, querystring, li_headers=[', '.join(str(x) for x in colnames) for colnames in li_years])

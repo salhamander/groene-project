@@ -3,42 +3,38 @@ import os
 import pandas as pd
 import pickle as p
 import numpy as np
+import itertools
+from helpers import getPolitiekTokens, getKrantTokens, getStem
 from sklearn.feature_extraction.text import TfidfVectorizer
 
 def no_tokenizer(doc):
 	return doc
 
-def getTfidf(li_tokens, li_filenames, filename, min_df=0, max_df=0, top_n=25):
-	"""
+def getTfidf(li_tokens, li_filenames, filename, min_df=0, max_df=0, top_n=25, ngram_range=1):
+	'''
 	Creates a csv with the top n highest scoring tf-idf words.
 
 	:param input,		list of tokens. Should be unpickled first
 	:param filename,	the name of the output folder, based on the input
-	:param max_df,		sklearn TfidfVectorizer function to filter words that appear in all token lists
-	:
+	:param max_df,		filter out words that appear in more than length of token list - max_df
+	:param min_df,		filter out words that appear in less than min_df
+	:param ngram_range, the amount of words to extract
+	'''
 
-	"""
-
-	# Create an output folder if it doesn't exist yet
-	if not os.path.exists('output/'):
-		os.makedirs('output/')
-	if not os.path.exists('output/tfidf/'):
-		os.makedirs('output/tfidf/')
-	if min_df == 0:
-		min_df = len(li_tokens)
-	else:
+	if min_df != 0:
 		min_df = len(li_tokens) - min_df
 		print('Terms must appear in at least ' + str(min_df) + ' of the total ' + str(len(li_tokens)) + ' files.')
 	if max_df == 0:
 		max_df = len(li_tokens)
 	else:
 		max_df = len(li_tokens) - max_df
-		print('Terms may not appear in ' + str(max_df) + ' of the total ' + str(len(li_tokens)) + ' files.')
+		print('Terms may only appear in max ' + str(max_df) + ' of the total ' + str(len(li_tokens)) + ' files.')
 
-	output = 'output/tfidf/' + filename + '_tfidf.csv'
+	output = 'data/tfidf/' + filename + '_tfidf.csv'
 
 	print('Vectorizing!')
-	tfidf_vectorizer = TfidfVectorizer(min_df=min_df, max_df=max_df, analyzer='word', token_pattern=None, tokenizer=lambda i:i, lowercase=False)
+	print(min_df, max_df)
+	tfidf_vectorizer = TfidfVectorizer(min_df=min_df, max_df=max_df, ngram_range=(ngram_range,ngram_range), analyzer='word', token_pattern=None, tokenizer=lambda i:i, lowercase=False)
 	tfidf_matrix = tfidf_vectorizer.fit_transform(li_tokens)
 	#print(tfidf_matrix[:10])
 
@@ -47,7 +43,7 @@ def getTfidf(li_tokens, li_filenames, filename, min_df=0, max_df=0, top_n=25):
 	
 	# Print and store top n highest scoring tf-idf scores
 	top_words = feature_array[tfidf_sorting][:top_n]
-	#print(top_words)
+	print(top_words)
 
 	weights = np.asarray(tfidf_matrix.mean(axis=0)).ravel().tolist()
 	df_weights = pd.DataFrame({'term': tfidf_vectorizer.get_feature_names(), 'weight': weights})
@@ -100,6 +96,13 @@ def getTfidf(li_tokens, li_filenames, filename, min_df=0, max_df=0, top_n=25):
 
 	print('Done!')
 
-# show manual if needed
 if __name__ == '__main__':
-	getTfidf(li_tokens, li_filenames, filename, min_df=min_df, max_df=max_df, top_n=top)
+
+	li_years = [1995,1996,1997,1998,1999,2000,2001,2002,2003,2004,2005,2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016,2017,2018]
+	
+	#li_years = [[1995,1996,1997,1998,1999],[2000,2001,2002,2003,2004],[2005,2006,2007,2008,2009],[2010,2011,2012,2013,2014],[2015,2016,2017,2018]]
+	
+	filterword = getStem('moslim')
+	tokens = getPolitiekTokens(years=li_years, contains_word=filterword)
+	li_filenames = [str(year) for year in li_years]
+	getTfidf(tokens, li_filenames,filterword, ngram_range=2)
