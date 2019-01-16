@@ -25,18 +25,26 @@ from nltk.corpus import stopwords
 # full table: poldatabase_18_03_2018
 
 def calculateColocation(inputtokens, windowsize, nsize, querystring, fullcomment=False, min_frequency=1, max_output=100, matchword=''):
-	#guide here http://www.nltk.org/howto/collocations.html
-	#generate bigrams
-	#print(inputtokens[:10])
+	''' Generates a tuple of word collocations (bigrams or trigrams).
+	params: to be described :') '''
 
 	tokens = []
-	for spreekbeurt in inputtokens:
-		if querystring in spreekbeurt:
-			tokens.append(spreekbeurt)
+
+	if isinstance(querystring, str):
+		for spreekbeurt in inputtokens:
+			if querystring in spreekbeurt:
+				tokens.append(spreekbeurt)
+	elif isinstance(querystring, list):
+		for spreekbeurt in inputtokens:
+			if any(i in querystring for i in spreekbeurt):
+				tokens.append(spreekbeurt)
 	tokens = list(itertools.chain.from_iterable(tokens))
 	#print(tokens[:10])
 
 	if matchword == '':
+		# if isinstance(querystring, str):
+		# 	matchword = [querystring]
+		# else:
 		matchword = querystring
 	if nsize == 1:
 		finder = BigramCollocationFinder.from_words(tokens, window_size=windowsize)
@@ -49,7 +57,7 @@ def calculateColocation(inputtokens, windowsize, nsize, querystring, fullcomment
 		finder = TrigramCollocationFinder.from_words(tokens, window_size=windowsize)
 		#filter on trigrams that only contain the query string
 		if fullcomment == False:
-			word_filter = lambda w1, w2, w3: matchword not in (w1, w2, w3)
+			word_filter = lambda w1, w2, w3: matchword not in (w1, w2)
 			finder.apply_ngram_filter(word_filter)
 
 			finder.apply_freq_filter(min_frequency)
@@ -58,9 +66,10 @@ def calculateColocation(inputtokens, windowsize, nsize, querystring, fullcomment
 	#print(colocations[:10])
 	return colocations
 
-def createColocationDf(inputcolocations):
-	
-	# To do: make this work with trigrams
+def createColocationDf(input_collocations):
+	''' Converts tuple collocation data to a simple Pandas DataFrame
+	Doesn't work with trigrams yet '''
+
 	df = pd.DataFrame()
 	df['first_word'] = [tpl[0][0] for tpl in inputcolocations]
 	df['second_word'] = [tpl[0][1] for tpl in inputcolocations]
@@ -68,6 +77,42 @@ def createColocationDf(inputcolocations):
 
 	print(df)
 	return(df)
+
+def createRankfFlowDf(input_collocations, input_word, li_headers):
+	''' Converts a list of collocation data to a RankFlow compatible
+	Pandas DataFrame. Requires a list of collocation tuples, an `input_word`
+	which will be used to filter the results, and a list of headers
+	to use in the DataFrame. '''
+
+	print('Making a RankFlow capable DataFrame of collocation data.')
+
+	di_stems = p.load(open('data/di_stems.p', 'rb'))
+	di_all_data = OrderedDict()
+
+
+	print('Collecting data')
+	# Loop through total list of list of collocation tuples
+	for i, li_tpl in enumerate(input_collocations):
+		li_words = []
+		li_freqs = []
+		# Loop through single list of collocation tuples
+		for tpl in li_tpl:
+			# Add one of the two bigram collocations
+			# depending on whether it contains the `input_word`
+			if tpl[0][0] != input_word:
+				li_words.append(di_stems[tpl[0][0]][0])
+			else:
+				li_words.append(di_stems[tpl[0][1]][0])
+
+			li_freqs.append(tpl[1])
+			di_all_data[li_headers[i]] = li_words
+			di_all_data['frequency_' + str(li_headers[i])] = li_freqs
+
+	#print(di_all_data)
+	print('Compiling DataFrame')
+	df = pd.DataFrame(di_all_data)
+	print(df.head())
+	return df
 
 def getHandelingenCollocations():
 	tokens = p.load(open('data/politiek/handelingen/tokens/tokens_handelingen_20072010.p', 'rb'))
@@ -84,9 +129,7 @@ def getHandelingenCollocations():
 	write_handle.close()
 
 def getHashTags(li_tweets):
-	'''
-	Filters and ranks hashtags from a list of tweets
-	'''
+	''' Filters and ranks hashtags from a list of tweets. '''
 
 	li_hashtags = []
 	for index, tweet in enumerate(li_tweets):
@@ -130,16 +173,30 @@ def getTweetCollocations(word):
 
 if __name__ == '__main__':
 
-	years = [2015,2016,2017,2018]
-	li_tokens = []
-	for year in years:
-		tokens = p.load(open('data/politiek/handelingen/tokens/tokens_handelingen_' + str(year) + str(year + 1) + '.p', 'rb'))
-		li_tokens.append(tokens)
-		#print(tokens[:10])
+	#di_stems = p.load(open('data/di_stems.p', 'rb'))
+	#print(sorted(di_stems.keys()))
+	#print(di_stems['multiculturele'])
+	#quit()
 
-	li_tokens = list(itertools.chain.from_iterable(li_tokens))
-	
-	collocations = calculateColocation(li_tokens, 3, 1, 'nederlander', min_frequency=10)
-	print(collocations)
-	df = createColocationDf(collocations)
-	df.to_csv('bigrams-nederlander-20152018.csv')
+	li_years = [[1995,1996,1997,1998,1999],[2000,2001,2002,2003,2004],[2005,2006,2007,2008,2009],[2010,2011,2012,2013,2014],[2015,2016,2017,2018]]
+
+	#li_years = [[1999],[2000],[2001]]
+	li_collocations = []
+	print('Loading tokens')
+
+	querystring = 'vluchteli'
+
+	for years in li_years:
+		li_tokens = []
+		for year in years:
+			tokens = p.load(open('data/politiek/handelingen/tokens/tokens_handelingen_' + str(year) + str(year + 1) + '.p', 'rb'))
+			li_tokens.append(tokens)
+			#print(tokens[:1])
+
+		li_tokens = list(itertools.chain.from_iterable(li_tokens))
+		collocations = calculateColocation(li_tokens, 3, 1, querystring, min_frequency=10)
+		
+		li_collocations.append(collocations)
+
+	df = createRankfFlowDf(li_collocations, querystring, li_headers=[', '.join(str(x) for x in colnames) for colnames in li_years])
+	df.to_csv('data/bigrams/bigrams-' + querystring + '.csv')
