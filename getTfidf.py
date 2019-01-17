@@ -10,7 +10,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 def no_tokenizer(doc):
 	return doc
 
-def getTfidf(li_tokens, li_filenames, filename, min_df=0, max_df=0, top_n=25, ngram_range=1):
+def getTfidf(li_tokens, li_filenames, filename, min_df=0, max_df=0, top_n=25, ngram_range=1, domain=''):
 	'''
 	Creates a csv with the top n highest scoring tf-idf words.
 
@@ -21,6 +21,10 @@ def getTfidf(li_tokens, li_filenames, filename, min_df=0, max_df=0, top_n=25, ng
 	:param ngram_range, the amount of words to extract
 	'''
 
+	if domain == '':
+		print('Provide a domain please! (kranten, politiek, social_media)')
+		quit()
+
 	if min_df != 0:
 		min_df = len(li_tokens) - min_df
 		print('Terms must appear in at least ' + str(min_df) + ' of the total ' + str(len(li_tokens)) + ' files.')
@@ -30,11 +34,14 @@ def getTfidf(li_tokens, li_filenames, filename, min_df=0, max_df=0, top_n=25, ng
 		max_df = len(li_tokens) - max_df
 		print('Terms may only appear in max ' + str(max_df) + ' of the total ' + str(len(li_tokens)) + ' files.')
 
+	if isinstance(ngram_range, int):
+		ngram_range = (ngram_range,ngram_range)
+
 	output = 'data/tfidf/' + filename + '_tfidf.csv'
 
 	print('Vectorizing!')
 	print(min_df, max_df)
-	tfidf_vectorizer = TfidfVectorizer(min_df=min_df, max_df=max_df, ngram_range=(ngram_range,ngram_range), analyzer='word', token_pattern=None, tokenizer=lambda i:i, lowercase=False)
+	tfidf_vectorizer = TfidfVectorizer(min_df=min_df, max_df=max_df, ngram_range=ngram_range, analyzer='word', token_pattern=None, tokenizer=lambda i:i, lowercase=False)
 	tfidf_matrix = tfidf_vectorizer.fit_transform(li_tokens)
 	#print(tfidf_matrix[:10])
 
@@ -92,7 +99,7 @@ def getTfidf(li_tokens, li_filenames, filename, min_df=0, max_df=0, top_n=25, ng
 			vals = [int(tfidf * 100) for tfidf in li_scores]
 			df_rankflow[col] = vals
 
-	df_rankflow.to_csv(output[:-4] + '_rankflow.csv', encoding='utf-8', index=False)
+	df_rankflow.to_csv(output[:-4] + domain + '_rankflow.csv', encoding='utf-8', index=False)
 
 	print('Done!')
 
@@ -102,9 +109,9 @@ if __name__ == '__main__':
 	
 	#li_years = [[1995,1996,1997,1998,1999],[2000,2001,2002,2003,2004],[2005,2006,2007,2008,2009],[2010,2011,2012,2013,2014],[2015,2016,2017,2018]]
 	
-	filterword = getStem('moslim')
-	# tokens = getPolitiekTokens(years=li_years, contains_word=filterword)
+	filterword = getStem('islam')
+	#tokens = getPolitiekTokens(years=li_years, contains_word=filterword)
 	tokens = getKrantTokens('data/media/kranten/all-moslim-islam-withtokens.csv', years=li_years)
 	#print(tokens[0])
 	li_filenames = [str(year) for year in li_years]
-	getTfidf(tokens, li_filenames, filterword, ngram_range=2)
+	getTfidf(tokens, li_filenames, filterword, ngram_range=(2,3), domain='kranten')
