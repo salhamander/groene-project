@@ -178,15 +178,19 @@ if __name__ == '__main__':
 
 	#li_years = [[1999],[2000],[2001]]
 	print('Loading tokens')
-	kranten = ['algemeen dagblad','telegraaf','nrc','volkskrant']
-	querystring = getStem('moslim')
+	kranten = [False]
+	querystring = getStem('piet')
 	for krant in kranten:
 		li_collocations = []
-		li_tokens = getKrantTokens('data/media/kranten/all-moslim-islam-withtokens.csv', filter_krant=krant, years=li_years)
+		li_tokens = getKrantTokens('data/media/kranten/all-zwarte-piet.csv', filter_krant=krant, years=li_years)
 		#print(li_tokens[0][0])
 		for tokens in li_tokens:
 			collocations = calculateColocation(tokens, 3, 1, querystring, min_frequency=10)
 			li_collocations.append(collocations)
 
+		if krant == False:
+			krant = ''
+		else:
+			krant = '-' + krant
 		df = createRankfFlowDf(li_collocations, querystring, li_headers=[', '.join(str(x) for x in colnames) for colnames in li_years])
-		df.to_csv('data/bigrams/bigrams-kranten-' + querystring + '-' + krant + '.csv')
+		df.to_csv('data/bigrams/bigrams-kranten-' + querystring + krant + '.csv')
