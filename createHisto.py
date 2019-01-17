@@ -19,9 +19,11 @@ def createHistogram(df, querystring='', time_format='years', domain='', show_kra
 	if domain == 'kranten':
 		time_col = 'date_formatted'
 		text_col = 'full_text'
+
 	elif domain == 'politiek':
 		time_col = 'datum'
 		text_col = 'tekst'
+
 
 	# Domain (politcs, newspapers, tweets) needs to be set to asses the data
 	if domain == '':
@@ -32,18 +34,18 @@ def createHistogram(df, querystring='', time_format='years', domain='', show_kra
 
 	if isinstance(querystring, list):
 		querystring = '|'.join(querystring)
-		filename = querystring.replace('|','OR')
+		filename = filename + '-' + querystring.replace('|','OR')
 		if show_partij != False:
 			if isinstance(show_partij, int):
 				filename = filename + '_top-' + str(show_partij) + '-partijen'
 			else:
 				filename = filename + show_partij
 	else:
-		filename = querystring
+		filename = filename + querystring
 
 	# Filter the datasets on whether a specific words appears
 	if querystring != '':
-		print('Filtering data on whether it contains ' + filename)
+		print('Filtering data: ' + filename)
 		df = df.sort_values(by=[time_col])
 		df = df[df[text_col].str.contains(querystring, case=False, na=False)]
 
@@ -229,7 +231,7 @@ def createHistogram(df, querystring='', time_format='years', domain='', show_kra
 	
 	ax.set_axisbelow(True)
 	# ax.set_xticks(xticks)
-	ax.set_xticklabels(df_histo['date'], rotation='vertical')
+	ax.set_xticklabels(df.index, rotation='vertical')
 	ax.grid(color='#e5e5e5',linestyle='dashed', linewidth=.6)
 	ax.set_ylabel('Absoluut aantal', color=colors[0])
 	
@@ -279,12 +281,10 @@ def getSpreekbeurtCount():
 
 if __name__ == '__main__':
 	
-	# di_spreekbeurten = getSpreekbeurtCount()
-	# print(di_spreekbeurten)
-	# quit()
-	df = pd.read_csv('data/media/kranten/all-islam-moslim-moslims-atleast5.csv')
+	df = pd.read_csv('data/media/kranten/all-nederlandse-identiteit-withtokens-deduplicated.csv')
+	#df = pd.read_csv('data/politiek/handelingen/all-handelingen-no-voorzitter.csv')
 	#df = df[df['tekst'].str.contains('islam', na=False, case=False)]
 
 	#querystrings = [['nederlandse identiteit','nederlandse waarden'], 'gewone nederlander']
 	#for querystring in querystrings:
-	createHistogram(df, querystring=['moslim','islam'], time_format='years', domain='kranten', show_kranten=True)
+	createHistogram(df, querystring=['nederlandse identiteit'], time_format='years', domain='kranten', show_kranten=True)

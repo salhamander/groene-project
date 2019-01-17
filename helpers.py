@@ -21,44 +21,44 @@ def getPolitiekTokens(years='all', contains_word=''):
 			if contains_word != '':
 				li_tokens = [spreekbeurt for spreekbeurt in li_tokens if contains_word in spreekbeurt]
 	
-	elif not isinstance(years, list) and not isinstance(years, int):
-		print('Indicate which years to fetch with a single int (e.g. 2000) or a list of ints (e.g. [2000,2001,2002]')
-		quit()
-	else:
-		li_tokens = []
 
-		# Simply return the tokens of one year if `years` is a single int
-		if isinstance(years, int):
-			tokens = p.load(open('data/politiek/handelingen/tokens/tokens_handelingen_' + str(years) + str(years + 1) + '.p', 'rb'))
-			# Filter on word if nessecary
+	# Simply return the tokens of one year if `years` is a single int
+	elif isinstance(years, int):
+		tokens = p.load(open('data/politiek/handelingen/tokens/tokens_handelingen_' + str(years) + str(years + 1) + '.p', 'rb'))
+		# Filter on word if nessecary
+		if contains_word != '':
+			tokens = [spreekbeurt for spreekbeurt in tokens if contains_word in spreekbeurt]
+		tokens = list(itertools.chain.from_iterable(tokens))
+		li_tokens.append(tokens)
+
+	# Return tokens per year in a list if a list of years is provided
+	elif isinstance(years, list) and isinstance(years[0], int):
+		li_tokens = []
+		for year in years:
+			tokens = p.load(open('data/politiek/handelingen/tokens/tokens_handelingen_' + str(year) + str(year + 1) + '.p', 'rb'))
+			# Filter on word if necessary
 			if contains_word != '':
 				tokens = [spreekbeurt for spreekbeurt in tokens if contains_word in spreekbeurt]
 			tokens = list(itertools.chain.from_iterable(tokens))
 			li_tokens.append(tokens)
 
-		# Return tokens per year in a list if a list of years is provided
-		elif isinstance(years[0], int):
-			for year in years:
+	# If a list of lists with years is provided,
+	# merge the tokens from a single list and return tokens in a per range
+	elif isinstance(years, list) and isinstance(years[0], list):
+		for year_range in years:
+			li_year_range = []
+			for year in year_range:
 				tokens = p.load(open('data/politiek/handelingen/tokens/tokens_handelingen_' + str(year) + str(year + 1) + '.p', 'rb'))
 				# Filter on word if necessary
 				if contains_word != '':
 					tokens = [spreekbeurt for spreekbeurt in tokens if contains_word in spreekbeurt]
-				tokens = list(itertools.chain.from_iterable(tokens))
-				li_tokens.append(tokens)
+				li_year_range.append(list(itertools.chain.from_iterable(tokens)))
+			tokens = list(itertools.chain.from_iterable(li_year_range))
+			li_tokens.append(tokens)
 
-		# If a list of lists with years is provided,
-		# merge the tokens from a single list and return tokens in a per range
-		elif isinstance(years[0], list):
-			for year_range in years:
-				li_year_range = []
-				for year in year_range:
-					tokens = p.load(open('data/politiek/handelingen/tokens/tokens_handelingen_' + str(year) + str(year + 1) + '.p', 'rb'))
-					# Filter on word if necessary
-					if contains_word != '':
-						tokens = [spreekbeurt for spreekbeurt in tokens if contains_word in spreekbeurt]
-					li_year_range.append(list(itertools.chain.from_iterable(tokens)))
-				tokens = list(itertools.chain.from_iterable(li_year_range))
-				li_tokens.append(tokens)
+	else:
+		print('Indicate which years to fetch with a single int (e.g. 2000) or a list of ints (e.g. [2000,2001,2002]')
+		quit()
 
 	return li_tokens
 
@@ -80,23 +80,26 @@ def getKrantTokens(file, filter_krant=False, years='all',):
 	# Filter the DataFrame on whether it is in a year.
 	if years != 'all':
 		if isinstance(years, list):
-			if isinstance(years[0], list):
-				for li_years in years:
-					df_year = df[df['date_formatted'].str.contains('|'.join([str(year) for year in li_years]))]
+			for years in years:
+				if isinstance(years, list):
+					df_year = df[df['date_formatted'].str.contains('|'.join([str(single_year) for single_year in years]))]
 					tokens = [ast.literal_eval(tokens) for tokens in df_year['tokens'].tolist()]
 					tokens = list(itertools.chain.from_iterable(tokens))
 					li_tokens.append(tokens)
-			elif isinstance(years[0], int):
-				for year in years:
-					df_year = df[df['date_formatted'].str.contains(str(year))]
+				elif isinstance(years, int):	
+					df_year = df[df['date_formatted'].str.contains(str(years))]
 					tokens = [ast.literal_eval(tokens) for tokens in df_year['tokens'].tolist()]
 					tokens = list(itertools.chain.from_iterable(tokens))
-					li_tokens.append(list(itertools.chain.from_iterable(tokens)))
-
-			else:
-				print('Invalid year')
-				print(type(year), year)
-				quit()
+					li_tokens.append(tokens)
+		elif isinstance(years, int):	
+					df_year = df[df['date_formatted'].str.contains(str(years))]
+					tokens = [ast.literal_eval(tokens) for tokens in df_year['tokens'].tolist()]
+					tokens = list(itertools.chain.from_iterable(tokens))
+					li_tokens.append(tokens)
+		else:
+			print('Invalid year')
+			print(type(years), years)
+			quit()
 
 	return li_tokens
 
