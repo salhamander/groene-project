@@ -2,6 +2,7 @@ import pickle as p
 import pandas as pd
 import itertools
 import ast
+from getTokens import getNewspaperTokens
 
 # Helper functions for the rest of the code
 
@@ -61,18 +62,39 @@ def getPolitiekTokens(years='all', contains_word=''):
 
 	return li_tokens
 
-def getKrantTokens(file):
-	''' Returns the tokens from a specific '''
+def getKrantTokens(file, filter_krant=False, years='all',):
+	''' Returns the tokens from a newspapers. '''
 
-	df = pd.load_csv(file)
+	df = pd.read_csv(file)
+	li_tokens = []
 
 	if 'tokens' not in df.columns:
 		print('Tokenise the newspaper text first with getTokens.py!')
 		quit()
 
-	else:
-		tokens = [ast.literal_eval(tokens) for tokens in df['tokens'].tolist()]
-		return tokens
+	if filter_krant != False:
+		df = df[df['newspaper'].str.contains(filter_krant, case=False)]
+
+	# Filter the DataFrame on whether it is in a year.
+	if years != 'all':
+		if isinstance(years, list):
+			if isinstance(years[0], list):
+				for li_years in years:
+					df_year = df[df['date_formatted'].str.contains('|'.join([str(year) for year in li_years]))]
+					tokens = [ast.literal_eval(tokens) for tokens in df_year['tokens'].tolist()]
+					tokens = list(itertools.chain.from_iterable(tokens))
+					li_tokens.append(tokens)
+			elif isinstance(years, int):
+				df_year = df[df['date_formatted'].str.contains('|'.join([str(year) for year in li_years]))]
+				tokens = [ast.literal_eval(tokens) for tokens in df_year['tokens'].tolist()]
+				tokens = list(itertools.chain.from_iterable(tokens))
+				li_tokens.append(tokens)
+			else:
+				print('Invalid year')
+				print(type(year), year)
+				quit()
+
+	return li_tokens
 
 def getStem(word):
 	''' Checks if a stem is in the di_stems.p file.

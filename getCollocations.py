@@ -174,23 +174,19 @@ def getTweetCollocations(word):
 
 if __name__ == '__main__':
 
-	#di_stems = p.load(open('data/di_stems.p', 'rb'))
-	#print(sorted(di_stems.keys()))
-	#print(di_stems['multiculturele'])
-	#quit()
-
 	li_years = [[1995,1996,1997,1998,1999],[2000,2001,2002,2003,2004],[2005,2006,2007,2008,2009],[2010,2011,2012,2013,2014],[2015,2016,2017,2018]]
 
 	#li_years = [[1999],[2000],[2001]]
 	print('Loading tokens')
+	kranten = ['algemeen dagblad','telegraaf','nrc','volkskrant']
+	querystring = getStem('moslim')
+	for krant in kranten:
+		li_collocations = []
+		li_tokens = getKrantTokens('data/media/kranten/all-moslim-islam-withtokens.csv', filter_krant=krant, years=li_years)
+		#print(li_tokens[0][0])
+		for tokens in li_tokens:
+			collocations = calculateColocation(tokens, 3, 1, querystring, min_frequency=10)
+			li_collocations.append(collocations)
 
-	querystring = getStem('allochton')
-
-	li_collocations = []
-	for years in li_years:
-		li_tokens = getPolitiekTokens(years, contains_word=querystring)
-		collocations = calculateColocation(li_tokens, 3, 1, querystring, min_frequency=10)
-		li_collocations.append(collocations)
-
-	df = createRankfFlowDf(li_collocations, querystring, li_headers=[', '.join(str(x) for x in colnames) for colnames in li_years])
-	df.to_csv('data/bigrams/bigrams-' + querystring + '.csv')
+		df = createRankfFlowDf(li_collocations, querystring, li_headers=[', '.join(str(x) for x in colnames) for colnames in li_years])
+		df.to_csv('data/bigrams/bigrams-kranten-' + querystring + '-' + krant + '.csv')
