@@ -20,16 +20,12 @@ def getTokens(li_strings, stemming=False, lemmatizing=False):
 			di_stems = p.load(open('data/di_stems.p', 'rb'))
 		else:
 			di_stems = {}
-
-	print('imported')
-	
 	# Do some cleanup: only alphabetic characters, no stopwords
 	# Create separate stemmed tokens, to which the full strings will be compared to:
 	li_texts_stemmed = []
 	len_text = len(li_strings)
 	
 	print(len(li_strings))
-	print('Creating list of tokens per monthly document')
 	
 	for index, text in enumerate(li_strings):
 		

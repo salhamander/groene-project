@@ -73,6 +73,8 @@ def getKrantTokens(file, filter_krant=False, years='all',):
 		quit()
 
 	if filter_krant != False:
+		if filter_krant == 'ad':
+			filter_krant = 'dagblad'
 		df = df[df['newspaper'].str.contains(filter_krant, case=False)]
 
 	# Filter the DataFrame on whether it is in a year.
@@ -84,11 +86,13 @@ def getKrantTokens(file, filter_krant=False, years='all',):
 					tokens = [ast.literal_eval(tokens) for tokens in df_year['tokens'].tolist()]
 					tokens = list(itertools.chain.from_iterable(tokens))
 					li_tokens.append(tokens)
-			elif isinstance(years, int):
-				df_year = df[df['date_formatted'].str.contains('|'.join([str(year) for year in li_years]))]
-				tokens = [ast.literal_eval(tokens) for tokens in df_year['tokens'].tolist()]
-				tokens = list(itertools.chain.from_iterable(tokens))
-				li_tokens.append(tokens)
+			elif isinstance(years[0], int):
+				for year in years:
+					df_year = df[df['date_formatted'].str.contains(str(year))]
+					tokens = [ast.literal_eval(tokens) for tokens in df_year['tokens'].tolist()]
+					tokens = list(itertools.chain.from_iterable(tokens))
+					li_tokens.append(tokens)
+
 			else:
 				print('Invalid year')
 				print(type(year), year)

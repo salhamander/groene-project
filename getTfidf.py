@@ -103,6 +103,8 @@ if __name__ == '__main__':
 	#li_years = [[1995,1996,1997,1998,1999],[2000,2001,2002,2003,2004],[2005,2006,2007,2008,2009],[2010,2011,2012,2013,2014],[2015,2016,2017,2018]]
 	
 	filterword = getStem('moslim')
-	tokens = getPolitiekTokens(years=li_years, contains_word=filterword)
+	# tokens = getPolitiekTokens(years=li_years, contains_word=filterword)
+	tokens = getKrantTokens('data/media/kranten/all-moslim-islam-withtokens.csv', years=li_years)
+	#print(tokens[0])
 	li_filenames = [str(year) for year in li_years]
-	getTfidf(tokens, li_filenames,filterword, ngram_range=2)
+	getTfidf(tokens, li_filenames, filterword, ngram_range=2)
