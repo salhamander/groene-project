@@ -91,7 +91,7 @@ def getKrantTokens(file, filter_krant=False, years='all',):
 					df_year = df[df['date_formatted'].str.contains(str(year))]
 					tokens = [ast.literal_eval(tokens) for tokens in df_year['tokens'].tolist()]
 					tokens = list(itertools.chain.from_iterable(tokens))
-					li_tokens.append(tokens)
+					li_tokens.append(list(itertools.chain.from_iterable(tokens)))
 
 			else:
 				print('Invalid year')
