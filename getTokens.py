@@ -121,20 +121,24 @@ def getNewspaperTokens(path_to_file):
 	for i in range(len(df)):
 		#print(df.loc[i])
 		#print(len(li_text[i]))
-		#raw_text = eval(li_text[i])
-		#print(raw_text)
-		raw_text = ['']
-		raw_text = re.split('\"\, \'|\"\, \"|\'\, \"', li_text[i])
+		try:
+			if li_text[i].startswith('['):
+				raw_text = ast.literal_eval(li_text[i])
+			else:
+				raw_text = re.split('\"\, \'|\"\, \"|\'\, \"', li_text[i])
+		except:
+			raw_text = ''
 		all_tokens.append(raw_text)
 	
 	all_tokens = getTokens(all_tokens, stemming=True)
 	df['tokens'] = all_tokens
 	df.to_csv(path_to_file[:-4] + '-withtokens.csv')
+	return all_tokens
 
 if __name__ == '__main__':
 
-	tokens = getNewspaperTokens('data/media/kranten/all-racisme-racistisch-racist-atleast3.csv')
-	p.dump(tokens, open('data/media/kranten/tokens-all-racisme-racistisch-racist-atleast3.p', 'wb'))
+	tokens = getNewspaperTokens('data/media/kranten/all-moslim-islam.csv')
+	p.dump(tokens, open('data/media/kranten/tokens/tokens-all-moslim-islam.p', 'wb'))
 
 	# df = pd.read_csv('data/media/kranten/islam-moslim-moslims-atleast5-allpapers.csv')
 
