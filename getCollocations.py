@@ -227,6 +227,6 @@ if __name__ == '__main__':
 	#li_years = [[1999],[2000],[2001]]
 	print('Loading tokens')
 	kranten = [False]
-	querystring = getStem('turks')
+	querystring = getStem('turk')
 	getPolitiekCollocations(querystring=querystring, li_years=li_years)
 	#getKrantCollocations('all-allochtoon-allochtoons-allochtoonse-allochtone-allochtonen-withtokens-deduplicated.csv', window_size=5, querystring=querystring, li_years=li_years)
