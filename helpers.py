@@ -14,6 +14,8 @@ def getPolitiekTokens(years='all', contains_word=''):
 	Provide a word in `contains_word` to only get
 	spreekbeurten that contain that string. '''
 
+	li_tokens = []
+
 	if years == 'all':
 		for i in range(23):
 			year = 1995 + i
@@ -33,7 +35,7 @@ def getPolitiekTokens(years='all', contains_word=''):
 
 	# Return tokens per year in a list if a list of years is provided
 	elif isinstance(years, list) and isinstance(years[0], int):
-		li_tokens = []
+		
 		for year in years:
 			tokens = p.load(open('data/politiek/handelingen/tokens/tokens_handelingen_' + str(year) + str(year + 1) + '.p', 'rb'))
 			# Filter on word if necessary

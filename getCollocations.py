@@ -28,7 +28,6 @@ from nltk.corpus import stopwords
 def calculateColocation(inputtokens, windowsize, nsize, querystring, fullcomment=False, min_frequency=1, max_output=100, matchword=''):
 	''' Generates a tuple of word collocations (bigrams or trigrams).
 	params: to be described :') '''
-	print(type(inputtokens), type(inputtokens[0]))
 	
 	if isinstance(inputtokens[0], list):
 		tokens = list(itertools.chain.from_iterable(inputtokens))
@@ -201,16 +200,15 @@ def getPolitiekCollocations(querystring='', li_years='all'):
 	df = createRankfFlowDf(li_collocations, querystring, li_headers=columns)
 	df.to_csv('data/bigrams/bigrams-politiek-' + querystring + '.csv')
 
-def getKrantCollocations(file, querystring, li_years, filter_krant=False):
+def getKrantCollocations(file, querystring, li_years, window_size=3, filter_krant=False):
 	''' Executes the collocation scripts for newspapers '''
 	li_collocations = []
 	li_tokens = getKrantTokens('data/media/kranten/' + file, filter_krant=filter_krant, years=li_years)
-	print(li_tokens[0][0])
-
+	
 	for tokens in li_tokens:
-		collocations = calculateColocation(tokens, 3, 1, querystring, min_frequency=1)
+		collocations = calculateColocation(tokens, window_size, 1, querystring, min_frequency=1)
 		li_collocations.append(collocations)
-		print(collocations)
+		print(collocations[:3])
 
 	if filter_krant == False:
 		krant = ''
@@ -220,7 +218,7 @@ def getKrantCollocations(file, querystring, li_years, filter_krant=False):
 	columns = [', '.join(str(x) for x in colnames) for colnames in li_years if isinstance(colnames, list)] + [str(year) for year in li_years if isinstance(year, int)]
 
 	df = createRankfFlowDf(li_collocations, querystring, li_headers=columns)
-	df.to_csv('data/bigrams/bigrams-kranten-' + querystring + '.csv')
+	df.to_csv('data/bigrams/bigrams-kranten-' + querystring + '-' + str(window_size) + '.csv')
 
 if __name__ == '__main__':
 
@@ -229,5 +227,6 @@ if __name__ == '__main__':
 	#li_years = [[1999],[2000],[2001]]
 	print('Loading tokens')
 	kranten = [False]
-	querystring = getStem('identiteit')
-	getKrantCollocations('all-nederlandse-identiteit-withtokens-deduplicated.csv', querystring=querystring, li_years=li_years)
+	querystring = getStem('turks')
+	getPolitiekCollocations(querystring=querystring, li_years=li_years)
+	#getKrantCollocations('all-allochtoon-allochtoons-allochtoonse-allochtone-allochtonen-withtokens-deduplicated.csv', window_size=5, querystring=querystring, li_years=li_years)

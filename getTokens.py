@@ -133,8 +133,8 @@ def getNewspaperTokens(path_to_file):
 
 if __name__ == '__main__':
 
-	tokens = getNewspaperTokens('data/media/kranten/all-zwarte-piet.csv')
-	p.dump(tokens, open('data/media/kranten/tokens/tokens-all-zwarte-piet.p', 'wb'))
+	tokens = getNewspaperTokens('data/media/kranten/all-multicultureel-multiculturele-multiculturalisme.csv')
+	p.dump(tokens, open('data/media/kranten/tokens/tokens-all-multicultureel-multiculturele-multiculturalisme.p', 'wb'))
 
 	# df = pd.read_csv('data/media/kranten/islam-moslim-moslims-atleast5-allpapers.csv')
 
