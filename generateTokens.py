@@ -9,11 +9,10 @@ from nltk.stem.wordnet import WordNetLemmatizer
 from helpers import getFbDf
 
 def generateTokens(li_strings, stemming=False, lemmatizing=False):
-	"""
-	Self-made tokenizer Tweede Kamer text.
-	Accepts input as a list of strings and a list of list of strings (paragraphs) 
+	''' Self-made tokenizer. Filters out URLs, words less than 3 characters and longer than
+	50 characters, numeric characters, stopwords (Dutch). Stems or lemmatizes the words.
+	Accepts input as a list of strings and a list of list of strings (paragraphs). '''
 
-	"""
 	# Get a dict to save the stems of the words for retrieval later
 	if stemming:
 		global di_stems
@@ -21,6 +20,7 @@ def generateTokens(li_strings, stemming=False, lemmatizing=False):
 			di_stems = p.load(open('data/di_stems.p', 'rb'))
 		else:
 			di_stems = {}
+
 	# Do some cleanup: only alphabetic characters, no stopwords
 	# Create separate stemmed tokens, to which the full strings will be compared to:
 	li_texts_stemmed = []
@@ -72,26 +72,26 @@ def getFilteredText(string, stemming=False, lemmatizing=False):
 	stemmer = SnowballStemmer('dutch')
 	lemmatizer = WordNetLemmatizer()
 
-	#list with tokens further processed
+	# List with tokens further processed
 	li_filtered_tokens = []
 	
-	# filter out any tokens not containing letters (e.g., numeric tokens, raw punctuation)
+	# Filter out any tokens not containing letters (e.g., numeric tokens, raw punctuation)
 	for token in tokens:
 		token = token.lower()
 		
-		# only alphabetic characters, keep '(' and ')' symbols for echo brackets, only tokens with three or more characters
+		# Only alphabetic characters, keep '(' and ')' symbols for echo brackets, only tokens with three or more characters
 		if re.match('[a-zA-Z\-\)\(]{3,50}', token) is not None:
-			# no stopwords
+			# No stopwords
 			if token not in stopwords.words('dutch'):
 				token = token.lower()
 
-				# stem if indicated it should be stemmed
+				# Stem if indicated it should be stemmed
 				if stemming:
 					token_stemmed = stemmer.stem(token)
 					li_filtered_tokens.append(token_stemmed)
 
-					# update lookup dict with token and stemmed token
-					# lookup dict is dict of stemmed words as keys and lists as full tokens
+					# Update lookup dict with token and stemmed token
+					# Lookup dict is dict of stemmed words as keys and lists as full tokens
 					if token_stemmed in di_stems:
 						if token not in di_stems[token_stemmed]:
 							di_stems[token_stemmed].append(token)
@@ -99,7 +99,7 @@ def getFilteredText(string, stemming=False, lemmatizing=False):
 						di_stems[token_stemmed] = []
 						di_stems[token_stemmed].append(token)
 				
-				#if lemmatizing is used instead
+				# If lemmatizing is used instead
 				elif lemmatizing:
 					token = lemmatizer.lemmatize(token)
 					li_filtered_tokens.append(token)
@@ -112,6 +112,7 @@ def getFilteredText(string, stemming=False, lemmatizing=False):
 def generateNewspaperTokens(path_to_file):
 	''' Prepares the text in a compiled csv of newspaper data
 	as to retrieve tokens '''
+
 	df = pd.read_csv(path_to_file)
 	df = df[:5000]
 	li_text = df['full_text'].tolist()
@@ -119,8 +120,6 @@ def generateNewspaperTokens(path_to_file):
 	all_tokens = []
 
 	for i in range(len(df)):
-		#print(df.loc[i])
-		#print(len(li_text[i]))
 		try:
 			if li_text[i].startswith('['):
 				raw_text = ast.literal_eval(li_text[i])
@@ -147,3 +146,6 @@ def generateFbTokens():
 	print(df.head())
 	df.to_csv('data/social_media/fb/fb_nl_programmas_withtokens-test.csv')
 	p.dump(all_tokens, open('data/social_media/fb/tokens/tokens_fb_nl_programmas-test.p', 'wb'))
+
+if __name__ == '__main__':
+	generateNewspaperTokens('data/media/kranten/all-multicultureel-multiculturele-multiculturalisme.csv')

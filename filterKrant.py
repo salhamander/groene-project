@@ -3,6 +3,7 @@ import ast
 
 def filterKrant(file, year, word):
 	''' Filters a newspaper dataset on year/string'''
+
 	df = pd.read_csv(file)
 	df = df[df['full_text'].str.contains(word, na=False, case=False)]
 
@@ -17,6 +18,7 @@ def filterKrant(file, year, word):
 def deduplicateKrant(file):
 	''' Deduplicates the rows from a newspaper csv.
 	Writes a new file (original name + -deduplicated)'''
+
 	df = pd.read_csv(file)
 
 	li_dropindex = []
@@ -39,4 +41,4 @@ def deduplicateKrant(file):
 	df.to_csv(file[:-4] + '-deduplicated.csv')
 
 if __name__ == '__main__':
-	deduplicateKrant('data/media/kranten/all-allochtoon-allochtoons-allochtoonse-allochtone-allochtonen-withtokens')
+	deduplicateKrant('data/media/kranten/all-multicultureel-multiculturele-multiculturalisme-withtokens.csv')

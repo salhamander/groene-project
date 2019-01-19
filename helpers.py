@@ -9,9 +9,8 @@ from collections import Counter
 
 def getPolitiekTokens(years='all', contains_word=''):
 	''' Returns a list of Tweede Kamer tokens.
-	Returns everything by default, but can also
-	return the tokens specific years, if provided
-	with a list.
+	Accepts multiple ways of filtering on year: single int, 
+	list of ints, list of list ints.
 	Provide a word in `contains_word` to only get
 	spreekbeurten that contain that string. '''
 
@@ -90,7 +89,11 @@ def getPolitiekTokens(years='all', contains_word=''):
 	return li_tokens
 
 def getKrantTokens(file, filter_krant=False, years='all',):
-	''' Returns the tokens from a newspapers. '''
+	''' Returns the tokens from a newspapers.
+	Accepts multiple ways of filtering on year: single int, 
+	list of ints, list of list ints.
+	Provide a newspaper in `filter_krant` to only get
+	articles from that newspaper. '''
 
 	df = pd.read_csv(file)
 	li_tokens = []
@@ -152,7 +155,7 @@ def getFbTokens(years='all', contains_word=''):
 def getStem(word):
 	''' Checks if a stem is in the di_stems.p file.
 	If it exists, it returns the word, and if not
-	if shows wat similar words are in the file.'''
+	if shows wat similar words are in the file. '''
 
 	di_stems = p.load(open('data/di_stems.p', 'rb'))
 	if word not in di_stems:

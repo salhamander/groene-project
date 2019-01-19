@@ -21,7 +21,7 @@ def createSqliteDb(path_to_csv):
 		i+=1
 		df.to_sql('page_comments', fb_database, index=False, if_exists='append')
 		j = df.index[-1] + 1
-		print(str(i))
+		print('Finished ' + str(i * chunksize) + '/' + str(len(df)) + ' rows')
 
 def createCsvFromFb(path_to_files):
 	''' Compile a bunch of netvizz .tab files into a big .csv file '''
@@ -44,4 +44,4 @@ def createCsvFromFb(path_to_files):
 
 if __name__ == '__main__':
  	#createCsvFromFb('data/social_media/fb/tab_files/')
-	#createSqliteDb('data/social_media/fb/fb_nl_programmas_withtokens.csv')
+	createSqliteDb('data/social_media/fb/fb_nl_programmas_withtokens.csv')
