@@ -9,28 +9,30 @@ import os
 from datetime import date, datetime, timedelta
 from collections import OrderedDict, Counter
 from matplotlib.ticker import ScalarFormatter
+from helpers import getFbDf
 
 li_handelingen_year = ['1995','1996','1997','1998','1999','2000','2001','2002','2003','2004','2005','2006','2007','2008','2009','2010','2011','2012','2013','2014','2015','2016','2017','2018']
 di_spreekbeurten_year = {'1995': 15307, '1996': 29962, '1997': 35065, '1998': 31306, '1999': 27441, '2000': 30259, '2001': 28454, '2002': 27759, '2003': 27340, '2004': 26221, '2005': 29306, '2006': 26912, '2007': 30040, '2008': 39179, '2009': 29565, '2010': 30557, '2011': 56205, '2012': 58427, '2013': 70284, '2014': 67304, '2015': 71281, '2016': 76531, '2017': 60142, '2018': 83588}
 
-def createHistogram(df, querystring='', time_format='years', domain='', show_kranten=False, show_partij=False, include_normalised=False):
-
-	# Set some column headers
-	if domain == 'kranten':
-		time_col = 'date_formatted'
-		text_col = 'full_text'
-
-	elif domain == 'politiek':
-		time_col = 'datum'
-		text_col = 'tekst'
-
+def createHistogram(querystring='', domain='', file_kranten='', show_kranten=False, show_partij=False, include_normalised=False, time_format='years'):
 
 	# Domain (politcs, newspapers, tweets) needs to be set to asses the data
-	if domain == '':
-		print('Please provide a domain (politcs, newspapers, tweets). Current input: ', domain)
-		quit()
+	# Set some column headers
+	filename = domain + '-'
+	if domain.startswith('krant') or domain.startswith('newspaper'):
+		df = pd.read_csv(file_kranten)
+		time_col = 'date_formatted'
+		text_col = 'full_text'
+	elif domain == 'politiek':
+		df = pd.read_csv('data/politiek/handelingen/all-handelingen-no-voorzitter.csv')
+		time_col = 'datum'
+		text_col = 'tekst'
+	elif domain == 'facebook' or domain == 'fb':
+		time_col = 'comment_published'
+		text_col = 'comment_message'
 	else:
-		filename = domain
+		print('Please provide a correct domain (politiek, kranten, facebook, twitter). Current input: ', domain)
+		quit()
 
 	if isinstance(querystring, list):
 		querystring = '|'.join(querystring)
@@ -43,11 +45,18 @@ def createHistogram(df, querystring='', time_format='years', domain='', show_kra
 	else:
 		filename = filename + querystring
 
-	# Filter the datasets on whether a specific words appears
-	if querystring != '':
-		print('Filtering data: ' + filename)
-		df = df.sort_values(by=[time_col])
+	# Filter on text
+	#if querystring != '':
+	print('Filtering data: ' + filename)
+	if domain == 'facebook':
+		print(querystring)
+		df = getFbDf(querystring)
+		print(df)
+		# df[time_col] = [time[:10] for time in df[time_col].tolist()]
+		# print(df[time_col])
+	else:
 		df = df[df[text_col].str.contains(querystring, case=False, na=False)]
+	df = df.sort_values(by=[time_col])
 
 	print('Setting time values correctly for the histogram')
 	# Set cut-off for yyyy-mm-dd format to filter on month or day
@@ -74,9 +83,9 @@ def createHistogram(df, querystring='', time_format='years', domain='', show_kra
 	li_check_dates = []
 
 	if time_format == 'years':
-		d1 = datetime.strptime(df_dates.index[0], "%Y").date()  			# start date
+		d1 = datetime.strptime(df_dates.index[0], "%Y").date()  				# start date
 		d2 = datetime.strptime(df_dates.index[len(df_dates) - 1], "%Y").date()	# end date
-		delta = d2 - d1													# timedelta
+		delta = d2 - d1															# timedelta
 		for i in range(delta.days + 1):
 			date = d1 + timedelta(days=i)
 			date = str(date)[:endstring]
@@ -85,9 +94,9 @@ def createHistogram(df, querystring='', time_format='years', domain='', show_kra
 				li_check_dates.append(date)
 
 	elif time_format == 'months':
-		d1 = datetime.strptime(df_dates.index[0], "%Y-%m").date()  			# start date
+		d1 = datetime.strptime(df_dates.index[0], "%Y-%m").date()  					# start date
 		d2 = datetime.strptime(df_dates.index[len(df_dates) - 1], "%Y-%m").date()	# end date
-		delta = d2 - d1													# timedelta
+		delta = d2 - d1																# timedelta
 		for i in range(delta.days + 1):
 			date = d1 + timedelta(days=i)
 			date = str(date)[:endstring]
@@ -131,10 +140,6 @@ def createHistogram(df, querystring='', time_format='years', domain='', show_kra
 
 		df_histo['av_count'] = li_av_count
 
-	if not os.path.exists('data/'):
-		os.makedirs('data/')
-
-	#print(df_histo.head())
 	print('Writing raw data to "' + 'data/histogram_data_' + filename + '.csv')
 	# Safe the metadata
 	df_histo.to_csv('data/histogram_data_' + filename + '.csv', index=False)
@@ -200,6 +205,15 @@ def createHistogram(df, querystring='', time_format='years', domain='', show_kra
 		df = df.reset_index()
 		df = df.pivot(index='year', columns='newspaper', values='size')
 
+	if domain == 'facebook':
+		df['year'] = [date[:4] for date in df[time_col].values.tolist()]
+		df = df.groupby(['page_name','year']).size().reset_index()
+		df = df.set_index('year')
+		df.columns = ['page_name','size']
+		df.to_csv('data/politiek/streamgraph-data-' + filename + '.csv')
+		df = df.reset_index()
+		df = df.pivot(index='year', columns='page_name', values='size')
+
 	fig, ax = plt.subplots(1,1)
 	fig = plt.figure(figsize=(12, 8))
 	fig.set_dpi(100)
@@ -216,10 +230,10 @@ def createHistogram(df, querystring='', time_format='years', domain='', show_kra
 		ax.xaxis.set_major_formatter(matplotlib.dates.DateFormatter(dateformat))
 	ax.get_yaxis().set_major_formatter(plt.FuncFormatter(lambda x, loc: "{:,}".format(int(x))))
 
-	#colors = ["#478f79","#853bce","#7de354","#d245bc","#5eaa3b","#5858ce","#d5d840","#5b2575","#60db9e","#d73d77","#c3dd85","#bc72c8","#538746","#747ed0","#d88b2e","#343c6f","#d44530","#67d3d6","#8a2d49","#afd4b5","#3f1d2d","#d4b774","#639dd1","#968a2d","#d693bf","#3f4e1e","#bbc0e0","#793c20","#517988","#d68562","#283831","#d06f7b","#867758","#836079","#d9b9ac"]
-	colors = ["#9a963f","#9968c9","#61ad4e","#c77f3a","#3fadaf"]
+	colors = ["#478f79","#853bce","#7de354","#d245bc","#5eaa3b","#5858ce","#d5d840","#5b2575","#60db9e","#d73d77","#c3dd85","#bc72c8","#538746","#747ed0","#d88b2e","#343c6f","#d44530","#67d3d6","#8a2d49","#afd4b5","#3f1d2d","#d4b774","#639dd1","#968a2d","#d693bf","#3f4e1e","#bbc0e0","#793c20","#517988","#d68562","#283831","#d06f7b","#867758","#836079","#d9b9ac"]
+	#colors = ["#9a963f","#9968c9","#61ad4e","#c77f3a","#3fadaf"]
 
-	if show_kranten != False or show_partij != False:
+	if show_kranten != False or show_partij != False or domain == 'facebook':
 		df.plot(ax=ax, stacked=True, kind='bar', width=.9, figsize=(10,7), color=colors)
 	
 	if include_normalised:
@@ -234,6 +248,7 @@ def createHistogram(df, querystring='', time_format='years', domain='', show_kra
 	ax.set_xticklabels(df.index, rotation='vertical')
 	ax.grid(color='#e5e5e5',linestyle='dashed', linewidth=.6)
 	ax.set_ylabel('Absoluut aantal', color=colors[0])
+	ax.set_xlabel('Jaren')
 	
 	if include_normalised:
 		ax2.set_ylabel('% van totaal aantal spreekbeurten in TK', color='#d12d04')
@@ -258,8 +273,10 @@ def createHistogram(df, querystring='', time_format='years', domain='', show_kra
 
 	if domain == 'politiek':
 		histo_title = 'Aantal spreekbeurten in Tweede Kamer met "' + querystring.replace('|', '" of "') + '"'
-	elif domain == 'kranten':
+	elif domain.startswith('krant'):
 		histo_title = 'Aantal gearchiveerde artikelen in Nederlandse kranten met "' + querystring.replace('|', '" of "') + '"'
+	elif domain == 'facebook':
+		histo_title = 'Aantal comments op de Facebook pagina\'s van Nederlandse actualiteitenprogramma\'s met "' + querystring.replace('|', '" of "') + '"'
 	plt.title(histo_title)
 
 	print('Saving svg file as "img/histo/histogram_' + filename + '_' + time_format + '.svg"')
@@ -269,22 +286,58 @@ def createHistogram(df, querystring='', time_format='years', domain='', show_kra
 
 	print('Done! Saved .csv of data and .png & .svg in folder \'img/\'')
 
-def getSpreekbeurtCount():
-	''' Returns a dict with the amount of spreekbeurten per year '''
-	di_spreekbeurten = {}
-	df = pd.read_csv('data/politiek/handelingen/all-handelingen.csv')
-	for year in li_handelingen_year:
-		df_year = df[df['datum'].str.contains(year)]
-		#print(year, len(df_year))
-		di_spreekbeurten[year] = len(df_year)
-	return di_spreekbeurten
+def createHorizontalHisto(li_values, li_counts, histo_title='Veelvoorkomende woordcombinaties', file_name=''):
+	''' Creates a horizontal histogram with counts of values.
+	Requires a list of values and a list of counts. '''
+
+	fig, ax = plt.subplots()
+	rects = ax.barh(li_values, li_counts, align='center', color='green')
+	ax.set_yticks(li_values)
+	ax.invert_yaxis()
+	ax.set_xlabel('Aantal')
+	ax.set_title(histo_title)
+
+	rect_labels = []
+	# Write in the ranking inside each bar
+	for i, rect in enumerate(rects):
+		width = rect.get_width()
+		labels = li_values[i] + ' (' + str(li_counts[i]) + ')'
+
+		# The bars aren't wide enough to print the ranking inside
+		if width < 50:
+			# Shift the text to the right side of the right edge
+			xloc = width + 1
+			clr = 'black'
+			align = 'left'
+		else:
+			# Shift the text to the left side of the right edge
+			xloc = 0.98 * width
+			clr = 'white'
+			align = 'right'
+
+		# Center the text vertically in the bar
+		yloc = rect.get_y() + rect.get_height()/2.0
+		label = ax.text(xloc, yloc, labels, horizontalalignment=align,
+						verticalalignment='center', color=clr,
+						clip_on=True)
+		rect_labels.append(label)
+
+	# Hide y axis labels
+	ax.get_yaxis().set_visible(False)
+
+	print('Saving svg file as "img/histo/histogram_' + file_name + '.svg"')
+	plt.savefig('img/histo/histogram_' + file_name + '.svg', dpi='figure',bbox_inches='tight')
+	print('Saving png file as "img/histo/histogram_' + file_name + '.png"')
+	plt.savefig('img/histo/histogram_' + file_name + '.png', dpi='figure',bbox_inches='tight')
+
+	print('Done! Saved .csv of data and .png & .svg in folder \'img/\'')
 
 if __name__ == '__main__':
 	
 	#df = pd.read_csv('data/media/kranten/all-zwarte-piet-withtokens-deduplicated.csv')
-	df = pd.read_csv('data/politiek/handelingen/all-handelingen-no-voorzitter.csv')
+	#df = pd.read_csv('data/politiek/handelingen/all-handelingen-no-voorzitter.csv')
 	#df = df[df['tekst'].str.contains('islam', na=False, case=False)]
 
 	#querystrings = [['nederlandse identiteit','nederlandse waarden'], 'gewone nederlander']
 	#for querystring in querystrings:
-	createHistogram(df, querystring='marokk', time_format='years', domain='politiek', show_partij=4, include_normalised=True)
+	createHistogram(querystring=[''], domain='politiek', time_format='years')

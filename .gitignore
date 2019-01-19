@@ -6,3 +6,4 @@ img/
 meeting_21-12
 todo_20dec.txt
 *.csv
+*.pyc

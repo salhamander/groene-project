@@ -1,15 +1,39 @@
 import pandas as pd
 import pickle as p
 import re
+from helpers import getFbDf
 
 li_years = [1995,1996,1997,1998,1999,2000,2001,2002,2003,2004,2005,2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016,2017,2018]
 
-def writeLongString(df, querystring='', domain='undefined', text_col='tekst', date_col='datum', filter_newspaper='', timespan=False):
+def writeLongString(querystring='', domain='', file_kranten='', text_col='tekst', date_col='datum', filter_newspaper='', timespan=False):
 	''' Writes a long text file based on a df.
 	Useful for Word Trees.
 	Can also detect to donwload for a specific or ranges of date/year.'''
 
 	filename = 'longstring_' + domain + '_'
+
+	# Kranten
+	if domain == 'kranten':
+		if file == '':
+			print('Please specify a specific file for newspaper data with `file_kranten`')
+			quit()
+		else:
+			df = pd.read_csv(file)
+		text_col = 'full_tekst'
+		date_col = 'date_formatted'
+	# Politiek
+	elif domain == 'politiek':
+		df = pd.read_csv('data/politiek/handelingen/all-handelingen-no-voorzitter.csv')
+		text_col = 'tekst'
+		date_col = 'datum'
+	# Facebook
+	elif domain == 'facebook':
+		df = getFbDf(querystring=querystring)
+		text_col = 'comment_message'
+		date_col = 'comment_published'
+	else:
+		print('Please specify a domain! (kranten, politiek, facebook, twitter)')
+		quit()
 
 	# Filter df on querystring
 	if querystring != '':
@@ -55,5 +79,5 @@ def writeLongString(df, querystring='', domain='undefined', text_col='tekst', da
 	print('Done! Written text file: data/longstrings/' + filename + '.txt')
 
 if __name__ == '__main__':
-	df = pd.read_csv('data/politiek/handelingen/all-handelingen.csv')
-	writeLongString(df, querystring='multiculturele', domain='politiek',text_col='tekst')
+	
+	writeLongString(querystring='allochtonen', domain='facebook')

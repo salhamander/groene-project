@@ -6,8 +6,9 @@ import os
 from nltk.corpus import stopwords
 from nltk.stem.snowball import SnowballStemmer
 from nltk.stem.wordnet import WordNetLemmatizer
+from helpers import getFbDf
 
-def getTokens(li_strings, stemming=False, lemmatizing=False):
+def generateTokens(li_strings, stemming=False, lemmatizing=False):
 	"""
 	Self-made tokenizer Tweede Kamer text.
 	Accepts input as a list of strings and a list of list of strings (paragraphs) 
@@ -41,8 +42,10 @@ def getTokens(li_strings, stemming=False, lemmatizing=False):
 				single_text = getFilteredText(single_text, stemming=stemming, lemmatizing=lemmatizing)
 				li_text_stemmed.append(single_text)
 			li_texts_stemmed.append(li_text_stemmed)
+		else:
+			li_texts_stemmed.append([])
 
-		if index % 100 == 0:
+		if index % 500 == 0:
 			print('Tokenising finished for string ' + str(index) + '/' + str(len_text))
 	
 	print(len(li_texts_stemmed))
@@ -56,11 +59,11 @@ def getTokens(li_strings, stemming=False, lemmatizing=False):
 
 def getFilteredText(string, stemming=False, lemmatizing=False):
 	
-	#first, remove urls
-	# if 'http' in string:
-	# 	string = re.sub(r'https?:\/\/.*[\r\n]*', ' ', string)
-	# if 'www.' in string:
-	# 	string = re.sub(r'www.*[\r\n]*', ' ', string)
+	# first, remove urls
+	if 'http' in string:
+		string = re.sub(r'https?:\/\/.*[\r\n]*', ' ', string)
+	if 'www.' in string:
+		string = re.sub(r'www.*[\r\n]*', ' ', string)
 
 	# get a list of words
 	string = string.replace('\n', ' ')
@@ -106,10 +109,11 @@ def getFilteredText(string, stemming=False, lemmatizing=False):
 
 	return li_filtered_tokens
 
-def getNewspaperTokens(path_to_file):
+def generateNewspaperTokens(path_to_file):
 	''' Prepares the text in a compiled csv of newspaper data
 	as to retrieve tokens '''
 	df = pd.read_csv(path_to_file)
+	df = df[:5000]
 	li_text = df['full_text'].tolist()
 	
 	all_tokens = []
@@ -126,25 +130,20 @@ def getNewspaperTokens(path_to_file):
 			raw_text = ''
 		all_tokens.append(raw_text)
 	
-	all_tokens = getTokens(all_tokens, stemming=True)
+	all_tokens = generateTokens(all_tokens, stemming=True)
 	df['tokens'] = all_tokens
 	df.to_csv(path_to_file[:-4] + '-withtokens.csv')
 	return all_tokens
 
-if __name__ == '__main__':
-
-	tokens = getNewspaperTokens('data/media/kranten/all-multicultureel-multiculturele-multiculturalisme.csv')
-	p.dump(tokens, open('data/media/kranten/tokens/tokens-all-multicultureel-multiculturele-multiculturalisme.p', 'wb'))
-
-	# df = pd.read_csv('data/media/kranten/islam-moslim-moslims-atleast5-allpapers.csv')
-
-	# years = years = ['1995','1996','1997','1998','1999','2000','2001','2002','2003','2004','2005','2006','2007','2008','2009','2010','2011','2012','2013','2014','2015','2016','2017','2018']
-	# print(set(df['date_formatted'].tolist()))
-	# quit()
-	# for year in years:
-
-	# 	df_date = df[df['date_formatted'].str.contains(year, NaN=False)]
-	# 	tokens = df_date['tekst'].tolist()
-	# 	print(len(tokens))
-	# 	tokens = getTokens(tokens, stemming=True, lemmatizing=False)
-	# 	p.dump(tokens, open('data/media/kranten/tokens_' + year + '-islam-moslim-moslims-atleast5-allpapers.p', 'wb'))
+def generateFbTokens():
+	''' Tokenises the text in a facebook csv.
+	Creates a new csv with a columns of tokens '''
+	df = getFbDf()
+	df = df
+	li_text = df['comment_message'].tolist()
+	
+	all_tokens = generateTokens(li_text, stemming=True)
+	df['tokens'] = all_tokens
+	print(df.head())
+	df.to_csv('data/social_media/fb/fb_nl_programmas_withtokens-test.csv')
+	p.dump(all_tokens, open('data/social_media/fb/tokens/tokens_fb_nl_programmas-test.p', 'wb'))
