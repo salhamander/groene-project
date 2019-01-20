@@ -42,6 +42,24 @@ def createCsvFromFb(path_to_files):
 		else:
 			df_page.to_csv(path_to_files + 'all-data.csv')
 
+def mergeTranscripts():
+	li_dfs = []
+	for single_program in os.listdir('data/media/televisie/transcripts/'):
+		df_program = pd.read_csv('data/media/televisie/transcripts/' + single_program)
+		df_program['program'] = (single_program.split('TV_full_')[1])[:-4]
+		li_dfs.append(df_program)
+	df = pd.concat(li_dfs, axis=0)
+	df.to_csv('data/media/televisie/all-transcripts.csv')
+
+def convertDate(path_to_file, time_col):
+	''' Converts a dd-mm-yyyy format to yyyy-mm-dd '''
+	
+	df = pd.read_csv(path_to_file)
+	df[time_col] = [time[6:] + '-' + time[3:6:] + '-' + time[:3] for time in df[time_col].tolist()]
+	df.to_csv(path_to_file[:-4] + '-correctdates.csv')
+
 if __name__ == '__main__':
  	#createCsvFromFb('data/social_media/fb/tab_files/')
-	createSqliteDb('data/social_media/fb/fb_nl_programmas_withtokens.csv')
+	#createSqliteDb('data/social_media/fb/fb_nl_programmas_withtokens.csv')
+	#mergeTranscripts()
+	convertDate('data/media/televisie/all-tv-transcripts-withtokens.csv', 'datestamp')

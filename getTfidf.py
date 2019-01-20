@@ -22,7 +22,7 @@ def getTfidf(li_tokens, li_filenames, filename, min_df=0, max_df=0, top_n=25, ng
 	'''
 
 	if domain == '':
-		print('Provide a domain please! (kranten, politiek, social_media)')
+		print('Provide a domain please! (politiek, kranten, televisie, social_media)')
 		quit()
 
 	if min_df != 0:
@@ -77,6 +77,7 @@ def getTfidf(li_tokens, li_filenames, filename, min_df=0, max_df=0, top_n=25, ng
 	df_full = pd.DataFrame()
 
 	print('Writing top ' + str(top_n) + ' terms per token file to "' + output[:-4] + '_full.csv"')
+
 	# Store top terms per doc in a csv
 	for index, doc in enumerate(df_matrix):
 		df_tim = (df_matrix.sort_values(by=[doc], ascending=False))[:top_n]

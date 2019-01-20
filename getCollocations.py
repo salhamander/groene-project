@@ -14,7 +14,7 @@ from nltk.collocations import *
 from nltk.tokenize import RegexpTokenizer
 from nltk.corpus import stopwords
 from createHisto import createHorizontalHisto
-from helpers import getPolitiekTokens, getKrantTokens, getFbTokens, getStem, rankVergaderingen, getFbDf
+from helpers import *
 
 def calculateColocation(inputtokens, windowsize, nsize, querystring, full_comment=False, min_frequency=1, max_output=100, forbidden_words=False):
 	''' Generates a tuple of word collocations (bigrams or trigrams).
@@ -36,8 +36,7 @@ def calculateColocation(inputtokens, windowsize, nsize, querystring, full_commen
 
 		# Filter out combinations not containing the query string
 		if full_comment == False:
-			word_filter = lambda w1, w2: not any(string in (w1, w2) for string in querystring) or any(string in (w1, w2) for string in forbidden_words)
-			#any([word for word in querystring] not in (w1, w2))
+			word_filter = lambda w1, w2: not any(string in (w1, w2) for string in querystring)
 			finder.apply_ngram_filter(word_filter)
 		
 		# Filter out forbidden words
@@ -93,8 +92,8 @@ def createRankfFlowDf(input_collocations, input_word, ngram_size, li_headers, fi
 	print('Collecting data')
 	# Loop through total list of list of collocation tuples
 	for i, li_tpl in enumerate(input_collocations):
-		li_words = []
-		li_freqs = []
+		
+		di_wordfreqs = OrderedDict()
 		# Loop through single list of collocation tuples
 
 		for tpl in li_tpl:
@@ -104,30 +103,39 @@ def createRankfFlowDf(input_collocations, input_word, ngram_size, li_headers, fi
 					# Add one of the two bigram collocations
 					# depending on whether it contains the `input_word`
 					if tpl[0][0] not in forbidden_words and tpl[0][1] not in forbidden_words:
-						if tpl[0][0] != input_word:
-							if tpl[0][0] in di_stems:
-								li_words.append(di_stems[tpl[0][0]][0])
-							else:
-								li_words.append(tpl[0][0])
-						else:
-							if tpl[0][1] in di_stems:
-								li_words.append(di_stems[tpl[0][1]][0])
-							else:
-								li_words.append(tpl[0][1])
-				else:
-					li_words.append(str(di_stems[tpl[0][0]][0]) + ', ' + str((di_stems[tpl[0][1]][0])))
 
+						# Store the value that is not the querystring
+						if tpl[0][0] == input_word:
+							tpl_i = 1
+						else:
+							tpl_i = 0
+
+						# Store the values of the tuples.
+						# Merges frequencies of appearances before or after querystring
+						if tpl[0][tpl_i] in di_stems:
+							if tpl[0][tpl_i] not in di_wordfreqs:
+								di_wordfreqs[tpl[0][tpl_i]] = tpl[1]
+							else:
+								di_wordfreqs[tpl[0][tpl_i]] = di_wordfreqs[tpl[0][tpl_i]] + tpl[1]
+						else:
+							if tpl[0][tpl_i] not in di_wordfreqs:
+								di_wordfreqs[tpl[0][tpl_i]] = tpl[1]
+							else:
+								di_wordfreqs[tpl[0][tpl_i]] = di_wordfreqs[tpl[0][tpl_i]] + tpl[1]
+				else:
+					li_words.append(str([0][0]) + ', ' + str((tpl[0][1])))
+
+			# Frequency sorting and word order can remain intact for trigrams 
 			elif ngram_size == 2:
-				li_words.append(' '.join(tpl[0]))
+				di_wordfreqs[(' '.join(tpl[0]))] = tpl[1]
+			
 			else:
 				print('Incorrect ngram_size, try again.', ngram_size)
 				quit()
-			
-			# Add the frequencies of the collocations
-			li_freqs.append(tpl[1])
-			
-		di_all_data[li_headers[i]] = li_words
-		di_all_data['frequency_' + str(li_headers[i])] = li_freqs
+		
+		di_wordfreqs = sorted(di_wordfreqs.items(), key=lambda kv: kv[1], reverse=True)
+		di_all_data[li_headers[i]] = [tpl[0] for tpl in di_wordfreqs]
+		di_all_data['frequency_' + str(li_headers[i])] = [tpl[1] for tpl in di_wordfreqs]
 
 	#print(di_all_data)
 	print('Compiling DataFrame')
@@ -138,15 +146,7 @@ def createRankfFlowDf(input_collocations, input_word, ngram_size, li_headers, fi
 
 def getTweetCollocations(word):
 
-	db = mysql.connector.connect(
-	  host='localhost',
-	  user='root',
-	  passwd='',
-	  database='actualiteitenprogrammas'
-	)
-
-	print(db)
-
+	db = mysql.connector.connect(host='localhost',user='root',passwd='',database='actualiteitenprogrammas')
 	cur = db.cursor()
 
 	# Use all the SQL you like
@@ -167,7 +167,7 @@ def getTweetCollocations(word):
 	tweets = [tweet[20] for tweet in results]
 	getHashTags(tweets)
 
-def getPolitiekCollocations(querystring='', li_years='all', ngram_size=1, window_size=3, full_comment=False, forbidden_words=False):
+def getTKCollocations(querystring='', li_years='all', ngram_size=1, window_size=3, full_comment=False, forbidden_words=False):
 	''' Executes the collocation scripts for politiek data. '''
 
 	li_tokens = getPolitiekTokens(contains_word=querystring, years=li_years)
@@ -204,7 +204,7 @@ def getPolitiekCollocations(querystring='', li_years='all', ngram_size=1, window
 	txtfile_full = open('data/politiek/vergaderingen_by_query/vergaderingen_' + 'OR'.join(querystring) + '.txt', 'w')
 	txtfile_full.write('%s' % rank_vergaderingen)
 
-def getKrantCollocations(file, querystring, li_years, ngram_size=1, window_size=3, filter_krant=False, forbidden_words=False):
+def getNewspaperCollocations(file, querystring, li_years, ngram_size=1, window_size=3, filter_krant=False, forbidden_words=False):
 	''' Executes the collocation scripts for newspapers '''
 	li_collocations = []
 	li_tokens = getKrantTokens('data/media/kranten/' + file, filter_krant=filter_krant, years=li_years)
@@ -238,6 +238,44 @@ def getKrantCollocations(file, querystring, li_years, ngram_size=1, window_size=
 		querystring = 'OR'.join(querystring)
 
 	df.to_csv('data/ngrams/kranten-' + ngram_label + querystring + '-' + str(window_size) + '.csv')
+
+def getTvCollocations(querystring='', program=False, li_years='all', ngram_size=1, window_size=3, forbidden_words=False, full_comment=False):
+	''' Executes the collocation scripts for TV transcript files '''
+
+	li_collocations = []
+	print('Getting TV tokens')
+	li_tokens = getTvTokens(filter_program=program, years=li_years)
+	#print(li_tokens[0])
+	# Wrap the tokens in a list if it's a single list
+	if isinstance(li_tokens[0], str):
+		print(len(li_tokens))
+		li_tokens = [li_tokens]
+
+	# Get the collocations per year
+	li_collocations = []
+	for tokens in li_tokens:
+		collocations = calculateColocation(tokens, window_size, ngram_size, querystring, min_frequency=1, full_comment=full_comment, forbidden_words=forbidden_words)
+		li_collocations.append(collocations)
+		print(collocations[:5])
+
+	if isinstance(li_years[0], list):
+		columns = [', '.join(str(x) for x in colnames) for colnames in li_years]
+	else:
+		columns = [str(year) for year in li_years]
+
+	if ngram_size == 1:
+		ngram_label = 'bigrams-'
+	elif ngram_size == 2:
+		ngram_label = 'trigrams-'
+
+	if isinstance(querystring, list):
+		querystring = 'OR'.join(querystring)
+
+	df = createRankfFlowDf(li_collocations, querystring, ngram_size, li_headers=columns, filter_words = not full_comment)
+	df.to_csv('data/ngrams/televisie-' + ngram_label + querystring + '.csv')
+
+	# Make a bar chart with the frequencies of the trigrams
+	createHorizontalHisto((df[df.columns[0]].tolist())[:10], (df[df.columns[1]].tolist())[:10], histo_title='Veelvoorkomende woordcominaties met "' + querystring + '"\n in Nieuwsuur, EenVandaag en Brandpunt', file_name='televisie-' + ngram_label + querystring)
 
 def getFbCollocations(querystring='', li_years='all', ngram_size=1, window_size=3, full_comment=False, forbidden_words=False):
 	''' Executes the collocation scripts for fb files '''
@@ -282,8 +320,9 @@ if __name__ == '__main__':
 	#li_years = [[1999],[2000],[2001]]
 	#li_years = [2011,2012,2013,2014,2015,2016,2017,2018]
 
-	querystring = getStem('racism')
-	#getPolitiekCollocations(querystring=querystring, li_years=li_years, full_comment=False, ngram_size=2)
-	#getKrantCollocations('all-multicultureel-multiculturele-multiculturalisme-withtokens-deduplicated.csv', ngram_size=2, querystring=querystring, li_years=li_years, forbidden_words=['institut','forum'])
-
-	getFbCollocations(querystring=querystring, ngram_size=2)
+	querystring = getStem('islam')
+	getTKCollocations(querystring=querystring, li_years=li_years, full_comment=False, ngram_size=1)
+	#getNewspaperCollocations('all-multicultureel-multiculturele-multiculturalisme-withtokens-deduplicated.csv', ngram_size=2, querystring=querystring, li_years=li_years, forbidden_words=['institut','forum'])
+	#getFbCollocations(querystring=querystring, ngram_size=2)
+	#querystring = getStem('islam')
+	#getFbCollocations(querystring=querystring, ngram_size=2)

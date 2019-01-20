@@ -114,7 +114,6 @@ def generateNewspaperTokens(path_to_file):
 	as to retrieve tokens '''
 
 	df = pd.read_csv(path_to_file)
-	df = df[:5000]
 	li_text = df['full_text'].tolist()
 	
 	all_tokens = []
@@ -134,18 +133,30 @@ def generateNewspaperTokens(path_to_file):
 	df.to_csv(path_to_file[:-4] + '-withtokens.csv')
 	return all_tokens
 
+def generateTvTokens(path_to_file):
+	''' Tokenises the text in a facebook csv.
+	Creates a new csv with a columns of tokens '''
+
+	df = pd.read_csv(path_to_file)
+	li_text = df['text'].tolist()
+	all_tokens = generateTokens(li_text, stemming=True)
+	df['tokens'] = all_tokens
+	print(df.head())
+	df.to_csv('data/media/televisie/all-tv-transcripts-withtokens.csv')
+	p.dump(all_tokens, open('data/media/televisie/tokens/tokens_tv_transcripts.p', 'wb'))
+
 def generateFbTokens():
 	''' Tokenises the text in a facebook csv.
 	Creates a new csv with a columns of tokens '''
 	df = getFbDf()
-	df = df
 	li_text = df['comment_message'].tolist()
 	
 	all_tokens = generateTokens(li_text, stemming=True)
 	df['tokens'] = all_tokens
 	print(df.head())
-	df.to_csv('data/social_media/fb/fb_nl_programmas_withtokens-test.csv')
-	p.dump(all_tokens, open('data/social_media/fb/tokens/tokens_fb_nl_programmas-test.p', 'wb'))
+	df.to_csv('data/social_media/fb/fb_nl_programmas_withtokens.csv')
+	p.dump(all_tokens, open('data/social_media/fb/tokens/tokens_fb_nl_programmas.p', 'wb'))
 
 if __name__ == '__main__':
-	generateNewspaperTokens('data/media/kranten/all-multicultureel-multiculturele-multiculturalisme.csv')
+	#generateNewspaperTokens('data/media/kranten/all-multicultureel-multiculturele-multiculturalisme.csv')
+	generateTvTokens('data/media/televisie/all-transcripts.csv')

@@ -3,6 +3,7 @@ import pandas as pd
 import itertools
 import ast
 import sqlite3
+import mysql.connector
 from collections import Counter
 
 # Helper functions for the rest of the code
@@ -95,7 +96,6 @@ def getKrantTokens(file, filter_krant=False, years='all',):
 	Provide a newspaper in `filter_krant` to only get
 	articles from that newspaper. '''
 
-	df = pd.read_csv(file)
 	li_tokens = []
 
 	if 'tokens' not in df.columns:
@@ -130,6 +130,67 @@ def getKrantTokens(file, filter_krant=False, years='all',):
 			print('Invalid year')
 			print(type(years), years)
 			quit()
+
+	return li_tokens
+
+def getTvTokens(contains_word='', filter_program=False, years='all',):
+	''' Returns the tokens from a newspapers.
+	Accepts multiple ways of filtering on year: single int, 
+	list of ints, list of list ints.
+	Provide a newspaper in `filter_krant` to only get
+	articles from that newspaper. '''
+
+	df = pd.read_csv('data/media/televisie/all-tv-transcripts-withtokens.csv')
+	li_tokens = []
+
+
+	if 'tokens' not in df.columns:
+		print('Tokenise the newspaper text first with getTokens.py!')
+		quit()
+
+	if filter_program != False:
+		df = df[df['program'].str.contains(filter_krant, case=False)]
+	# Get all the data.
+	if years == 'all':
+		tokens = [ast.literal_eval(tokens) for tokens in df['tokens'].tolist()]
+		li_tokens.append(tokens)
+	# Filter the DataFrame per date.
+	else:
+		if isinstance(years, list):
+			for years in years:
+				if isinstance(years, list):
+					df_year = df[df['datestamp'].str.contains('|'.join([str(single_year) for single_year in years]))]
+					tokens = [ast.literal_eval(tokens) for tokens in df_year['tokens'].tolist()]
+					tokens = list(itertools.chain.from_iterable(tokens))
+					li_tokens.append(tokens)
+				elif isinstance(years, int):	
+					df_year = df[df['datestamp'].str.contains(str(years))]
+					tokens = [ast.literal_eval(tokens) for tokens in df_year['tokens'].tolist()]
+					tokens = list(itertools.chain.from_iterable(tokens))
+					li_tokens.append(tokens)
+		elif isinstance(years, int):	
+					df_year = df[df['datestamp'].str.contains(str(years))]
+					tokens = [ast.literal_eval(tokens) for tokens in df_year['tokens'].tolist()]
+					tokens = list(itertools.chain.from_iterable(tokens))
+					li_tokens.append(tokens)
+		else:
+			print('Invalid year')
+			print(type(years), years)
+			quit()
+
+	# Convert the querystring to a list of one element if it is a string
+	if contains_word != '' and isinstance(contains_word, str):
+		contains_word = [contains_word]
+
+	if contains_word != '':
+		match_tokens = []
+		for spreekbeurt in tokens:
+			if set(contains_word).issubset(spreekbeurt):
+				match_tokens.append(spreekbeurt)
+		tokens = match_tokens
+		#tokens = [spreekbeurt for spreekbeurt in tokens if set(contains_word).issubset(spreekbeurt)]
+		tokens = list(itertools.chain.from_iterable(tokens))
+		li_tokens.append(tokens)
 
 	return li_tokens
 
