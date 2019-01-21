@@ -229,5 +229,5 @@ if __name__ == '__main__':
 	#li_years = [[1999],[2000],[2001]]
 	print('Loading tokens')
 	kranten = [False]
-	querystring = getStem('identiteit')
-	getKrantCollocations('all-nederlandse-identiteit-withtokens-deduplicated.csv', querystring=querystring, li_years=li_years)
+	querystring = getStem('multiculturalism')
+	getKrantCollocations('all-multicultureel-multiculturele-multiculturalisme-withtokens-deduplicated.csv', querystring=querystring, li_years=li_years)

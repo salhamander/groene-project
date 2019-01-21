@@ -110,6 +110,7 @@ def getNewspaperTokens(path_to_file):
 	''' Prepares the text in a compiled csv of newspaper data
 	as to retrieve tokens '''
 	df = pd.read_csv(path_to_file)
+	df = df
 	li_text = df['full_text'].tolist()
 	
 	all_tokens = []
@@ -129,12 +130,13 @@ def getNewspaperTokens(path_to_file):
 	all_tokens = getTokens(all_tokens, stemming=True)
 	df['tokens'] = all_tokens
 	df.to_csv(path_to_file[:-4] + '-withtokens.csv')
+	df.to_csv('C:\\Users\\hagen\\Dropbox\\Universiteit van Amsterdam\\all-allochtoon-allochtoons-allochtoonse-allochtone-allochtonen-withtokens.csv')
 	return all_tokens
 
 if __name__ == '__main__':
 
-	tokens = getNewspaperTokens('data/media/kranten/all-zwarte-piet.csv')
-	p.dump(tokens, open('data/media/kranten/tokens/tokens-all-zwarte-piet.p', 'wb'))
+	tokens = getNewspaperTokens('data/media/kranten/all-allochtoon-allochtoons-allochtoonse-allochtone-allochtonen.csv')
+	#p.dump(tokens, open('data/media/kranten/tokens/tokens-allochtoon-allochtoons-allochtoonse-allochtone-allochtonen.p', 'wb'))
 
 	# df = pd.read_csv('data/media/kranten/islam-moslim-moslims-atleast5-allpapers.csv')
 

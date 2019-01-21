@@ -281,10 +281,10 @@ def getSpreekbeurtCount():
 
 if __name__ == '__main__':
 	
-	df = pd.read_csv('data/media/kranten/all-nederlandse-identiteit-withtokens-deduplicated.csv')
+	df = pd.read_csv('data/media/kranten/all-allochtoon-allochtoons-allochtoonse-allochtone-allochtonen.csv')
 	#df = pd.read_csv('data/politiek/handelingen/all-handelingen-no-voorzitter.csv')
 	#df = df[df['tekst'].str.contains('islam', na=False, case=False)]
 
 	#querystrings = [['nederlandse identiteit','nederlandse waarden'], 'gewone nederlander']
 	#for querystring in querystrings:
-	createHistogram(df, querystring=['nederlandse identiteit'], time_format='years', domain='kranten', show_kranten=True)
+	createHistogram(df, querystring=['allochto'], time_format='years', domain='kranten', show_kranten=True)

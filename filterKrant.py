@@ -39,4 +39,4 @@ def deduplicateKrant(file):
 	df.to_csv(file[:-4] + '-deduplicated.csv')
 
 if __name__ == '__main__':
-	deduplicateKrant('data/media/kranten/all-nederlandse-identiteit-withtokens.csv')
+	deduplicateKrant('data/media/kranten/all-multicultureel-multiculturele-multiculturalisme-withtokens.csv')

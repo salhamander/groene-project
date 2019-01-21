@@ -10,11 +10,10 @@ from datetime import datetime
 from docx import Document
 from win32com.client import constants
 
-
 def save_as_docx(folder):
 	print('C:\\Users\\hagen\\documents\\uva\\groene-project\\' + folder.replace('/','\\') + '**\\*.doc')
 	paths = glob('C:\\Users\\hagen\\documents\\uva\\groene-project\\' + folder.replace('/','\\') + '**\\*.doc', recursive=True)
-	for file in paths:
+	for file in paths[:-2]:
 		
 			# Opening MS Word
 			word = win32.gencache.EnsureDispatch('Word.Application')
@@ -216,8 +215,10 @@ def getKrantenInfo(folder):
 
 #save_as_docx('shit')
 if __name__ == '__main__':
-	
-	getKrantenInfo('data/media/kranten/moslim-islam/')
+
+	# save_as_docx('data/media/kranten/multicultureel-multiculturele-multiculturalisme/')
+	# time.sleep(5)
+	getKrantenInfo('data/media/kranten/multicultureel-multiculturele-multiculturalisme/')
 
 	# tokens = getTokens.getNewspaperTokens('data/media/kranten/multicultureel-multiculturele-multiculturalisme/all-data.csv')
 	# p.dump(tokens, open('data/media/kranten/tokens-all-multicultureel-multiculturele-multiculturalisme.p', 'wb'))
