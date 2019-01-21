@@ -1,38 +1,45 @@
-from glob import glob
 import re
 import os
 import win32com.client as win32
 import pandas as pd
-import getTokens
+import generateTokens
 import pickle as p
 import time
+from glob import glob
 from datetime import datetime
 from docx import Document
 from win32com.client import constants
 
 def save_as_docx(folder):
+	''' Converts .doc files to .docx so it can
+	be read by python-docx. '''
+
 	print('C:\\Users\\hagen\\documents\\uva\\groene-project\\' + folder.replace('/','\\') + '**\\*.doc')
 	paths = glob('C:\\Users\\hagen\\documents\\uva\\groene-project\\' + folder.replace('/','\\') + '**\\*.doc', recursive=True)
 	for file in paths[:-2]:
 		
-			# Opening MS Word
-			word = win32.gencache.EnsureDispatch('Word.Application')
-			doc = word.Documents.Open(file)
-			doc.Activate ()
+		# Opening MS Word
+		word = win32.gencache.EnsureDispatch('Word.Application')
+		doc = word.Documents.Open(file)
+		doc.Activate ()
 
-			# Rename path with .docx
-			new_file_abs = os.path.abspath(file)
-			new_file_abs = re.sub(r'\.\w+$', '.docx', new_file_abs)
+		# Rename path with .docx
+		new_file_abs = os.path.abspath(file)
+		new_file_abs = re.sub(r'\.\w+$', '.docx', new_file_abs)
 
-			# Save and Close
-			word.ActiveDocument.SaveAs(
-				new_file_abs, FileFormat=constants.wdFormatXMLDocument
-			)
-			doc.Close(False)
-			print('Saved ' + file + ' as docx.')
+		# Save and Close
+		word.ActiveDocument.SaveAs(
+			new_file_abs, FileFormat=constants.wdFormatXMLDocument
+		)
+		doc.Close(False)
+		print('Saved ' + file + ' as docx.')
 
 
 def getKrantenInfo(folder):
+	''' Runs through the unfortunate format of LexisNexis
+	.docx files and saves the newspaper info to a csv. '''
+
+
 	li_files = [file for file in os.listdir(folder) if file.endswith('.docx')]
 	print(li_files)
 
@@ -54,8 +61,8 @@ def getKrantenInfo(folder):
 		
 		source = ''
 
-		# Debugging
-		#if file != 'De_Volkskrant-2006-1-moslim-moslim-islam-atleast5.docx':
+		# For debugging
+		# if file != 'De_Volkskrant-2006-1-moslim-moslim-islam-atleast5.docx':
 		if 1 == 2:
 		 	print('')
 		else:
@@ -65,7 +72,7 @@ def getKrantenInfo(folder):
 
 			article_no = -1
 
-			# Variables to get
+			# Variables to get:
 			# artikel_info = {}
 			# artikel_info['newspaper'] = ''
 			# artikel_info['title'] = ''
@@ -77,15 +84,12 @@ def getKrantenInfo(folder):
 
 			# Loop through the paragraphs
 			for i, para in enumerate(document.paragraphs):
-				#print(i, len(document.paragraphs))
 				paragraph = para
 				para_full = para.text
 				para = para.text.lower().rstrip().lstrip()
 
-				#print(para)
-				# New article
+				# New article!
 				if not start_of_doc and 'source: ' in para:
-					#print(para.replace('source: ', ''))
 					source = para.replace('source: ', '')
 
 				# If a new '1 of XX DOCUMENTS' is reached, start storing article data
@@ -108,19 +112,13 @@ def getKrantenInfo(folder):
 				if start_of_doc:
 
 					if len(para) > 0:
-						#print(para)
 
 						# Only catch the first newspaper header. Sometimes newspaper names appear as in-text headers.
-						# print('newspaper' in li_artikelen[article_no])
-						#print(source,para)
-
 						if para in sources and ('of' in prev_para and 'DOCUMENTS' in prev_para):
 							is_date = True
 							li_artikelen[article_no]['newspaper'] = para
-							#print('source')
 
 						elif is_date:
-							#print(para)
 							if 'load-date' in para or '1vetkolom' in para:
 								is_date = True
 							else:
@@ -215,10 +213,15 @@ def getKrantenInfo(folder):
 
 #save_as_docx('shit')
 if __name__ == '__main__':
+<<<<<<< HEAD
 
 	# save_as_docx('data/media/kranten/multicultureel-multiculturele-multiculturalisme/')
 	# time.sleep(5)
 	getKrantenInfo('data/media/kranten/multicultureel-multiculturele-multiculturalisme/')
 
+=======
+	
+	#getKrantenInfo('data/media/kranten/moslim-islam/')
+>>>>>>> 6bc6d041d192f0556ccbac450214f1a5fde92520
 	# tokens = getTokens.getNewspaperTokens('data/media/kranten/multicultureel-multiculturele-multiculturalisme/all-data.csv')
 	# p.dump(tokens, open('data/media/kranten/tokens-all-multicultureel-multiculturele-multiculturalisme.p', 'wb'))

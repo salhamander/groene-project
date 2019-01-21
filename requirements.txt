@@ -1,0 +1,10 @@
+pandas
+python-docx
+nltk
+sklearn
+pickle
+mysql-connector
+xmltodict
+untangle
+bs4
+sqlalchemy
