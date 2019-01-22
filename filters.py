@@ -1,6 +1,25 @@
 import pandas as pd
 import ast
 
+def slicePolitiek(querystring='', date=''):
+	''' Slices and returns the TK handelingen
+	data as a pandas DataFrame either based on
+	whether it contains a string or has a specific
+	date. '''
+
+	df = pd.read_csv('data/politiek/handelingen/all-handelingen.csv')
+
+	if isinstance(querystring, list):
+		querystring = '|'.join(querystring)
+
+	if querystring != '':
+		df = df[df['tekst'].str.contains(querystring, na=False, case=False)]
+
+	if date != '':
+		df = df[df['datum'].str.contains(date, na=False, case=False)]
+
+	return df
+
 def filterKrant(file, year, word):
 	''' Filters a newspaper dataset on year/string'''
 
@@ -39,6 +58,7 @@ def deduplicateKrant(file):
 
 	df = df.drop(df.index[li_dropindex])
 	df.to_csv(file[:-4] + '-deduplicated.csv')
+
 
 if __name__ == '__main__':
 	deduplicateKrant('data/media/kranten/all-multicultureel-multiculturele-multiculturalisme-withtokens.csv')

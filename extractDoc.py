@@ -9,6 +9,7 @@ from glob import glob
 from datetime import datetime
 from docx import Document
 from win32com.client import constants
+from generateTokens import *
 
 def save_as_docx(folder):
 	''' Converts .doc files to .docx so it can
@@ -213,15 +214,8 @@ def getKrantenInfo(folder):
 
 #save_as_docx('shit')
 if __name__ == '__main__':
-<<<<<<< HEAD
-
-	# save_as_docx('data/media/kranten/multicultureel-multiculturele-multiculturalisme/')
-	# time.sleep(5)
-	getKrantenInfo('data/media/kranten/multicultureel-multiculturele-multiculturalisme/')
-
-=======
-	
-	#getKrantenInfo('data/media/kranten/moslim-islam/')
->>>>>>> 6bc6d041d192f0556ccbac450214f1a5fde92520
-	# tokens = getTokens.getNewspaperTokens('data/media/kranten/multicultureel-multiculturele-multiculturalisme/all-data.csv')
-	# p.dump(tokens, open('data/media/kranten/tokens-all-multicultureel-multiculturele-multiculturalisme.p', 'wb'))
+	#save_as_docx('data/media/kranten/racisme-racistisch-racist/')
+	#time.sleep(5)
+	#getKrantenInfo('data/media/kranten/multicultureel-multiculturele-multiculturalisme/')
+	tokens = generateNewspaperTokens('data/media/kranten/all-racisme-racistisch-racist.csv')
+	p.dump(tokens, open('data/media/kranten/tokens-racisme-racistisch-racist.p', 'wb'))
