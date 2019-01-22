@@ -114,6 +114,7 @@ def generateNewspaperTokens(path_to_file):
 	as to retrieve tokens '''
 
 	df = pd.read_csv(path_to_file)
+	df = df
 	li_text = df['full_text'].tolist()
 	
 	all_tokens = []
@@ -131,6 +132,7 @@ def generateNewspaperTokens(path_to_file):
 	all_tokens = generateTokens(all_tokens, stemming=True)
 	df['tokens'] = all_tokens
 	df.to_csv(path_to_file[:-4] + '-withtokens.csv')
+	df.to_csv('C:\\Users\\hagen\\Dropbox\\Universiteit van Amsterdam\\all-allochtoon-allochtoons-allochtoonse-allochtone-allochtonen-withtokens.csv')
 	return all_tokens
 
 def generateTvTokens(path_to_file):

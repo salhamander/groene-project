@@ -433,11 +433,4 @@ def createHorizontalHisto(li_values, li_counts, histo_title='Veelvoorkomende woo
 
 if __name__ == '__main__':
 	
-	#df = pd.read_csv('data/media/kranten/all-zwarte-piet-withtokens-deduplicated.csv')
-	#df = pd.read_csv('data/politiek/handelingen/all-handelingen-no-voorzitter.csv')
-	#df = df[df['tekst'].str.contains('islam', na=False, case=False)]
-
-	#querystrings = [['nederlandse identiteit','nederlandse waarden'], 'gewone nederlander']
-	#for querystring in querystrings:
-
-	createHistogram(querystring=['gewone nederlander'], domain='politiek', show_partij=6, time_format='years', include_normalised=True)
+	createHistogram(querystring=['racis'], domain='politiek', time_format='years', show_partij=6, include_normalised=True)
