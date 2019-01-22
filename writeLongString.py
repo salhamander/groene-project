@@ -5,7 +5,7 @@ from helpers import getFbDf
 
 li_years = [1995,1996,1997,1998,1999,2000,2001,2002,2003,2004,2005,2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016,2017,2018]
 
-def writeLongString(querystring='', domain='', file_kranten='', text_col='tekst', date_col='datum', filter_newspaper='', timespan=False):
+def writeLongString(querystring='', domain='', file='', text_col='tekst', date_col='datum', filter_newspaper='', timespan=False):
 	''' Writes a long text file based on a df.
 	Useful for Word Trees.
 	Can also detect to donwload for a specific or ranges of date/year.'''
@@ -15,10 +15,10 @@ def writeLongString(querystring='', domain='', file_kranten='', text_col='tekst'
 	# Kranten
 	if domain == 'kranten':
 		if file == '':
-			print('Please specify a specific file for newspaper data with `file_kranten`')
+			print('Please specify a specific file for newspaper data with `file`')
 			quit()
 		else:
-			df = pd.read_csv(file)
+			df = pd.read_csv('data/media/kranten/' + file)
 		text_col = 'full_tekst'
 		date_col = 'date_formatted'
 	# Politiek
@@ -31,15 +31,24 @@ def writeLongString(querystring='', domain='', file_kranten='', text_col='tekst'
 		df = getFbDf(querystring=querystring)
 		text_col = 'comment_message'
 		date_col = 'comment_published'
+	elif domain == 'twitter':
+		if file == '':
+			print('Please specify a specific file for newspaper data with `file`')
+			quit()
+		else:
+			df = pd.read_csv('data/social_media/twitter/' +file)
+			text_col = 'text'
 	else:
 		print('Please specify a domain! (kranten, politiek, facebook, twitter)')
 		quit()
 
 	# Filter df on querystring
 	if querystring != '':
+		if isinstance(querystring, list):
+			querystring = '|'.join(querystring)
 		print('Filtering data on whether it contains "' + querystring + '"')
 		df = df[df[text_col].str.contains(querystring, case=False, na=False)]
-		filename = filename + '' + querystring
+		filename = filename + '' + querystring.replace('|','OR')
 
 	# Filter df on newspaper (if applicable)
 	if filter_newspaper != '':
@@ -80,4 +89,4 @@ def writeLongString(querystring='', domain='', file_kranten='', text_col='tekst'
 
 if __name__ == '__main__':
 	
-	writeLongString(querystring='allochtonen', domain='facebook')
+	writeLongString(querystring=['multicultu','multi-cultu','multi cultu'], domain='facebook')

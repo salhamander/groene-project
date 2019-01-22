@@ -8,7 +8,7 @@ import re
 import os
 from datetime import date, datetime, timedelta
 from collections import OrderedDict, Counter
-from matplotlib.ticker import ScalarFormatter
+from matplotlib.ticker import ScalarFormatter, FormatStrFormatter
 from helpers import getFbDf
 
 # Some counts for calculating the averages in parliamentary data per year and months
@@ -19,13 +19,22 @@ di_spreekbeurten_month = {'1995-09':2099,'1995-10':4559,'1995-11':6167,'1995-12'
 # Some counts for calculating the averages in TV data per year
 di_tv_counts = {'2013-05':31, '2013-06':51, '2013-07':47, '2013-08':48, '2013-09':53, '2013-10':56, '2013-11':55, '2013-12':49, '2014-01':58, '2014-02':40, '2014-03':56, '2014-04':55, '2014-05':61, '2014-06':39, '2014-07':47, '2014-08':50, '2014-09':58, '2014-10':59, '2014-11':58, '2014-12':50, '2015-01':51, '2015-02':54, '2015-03':58, '2015-04':55, '2015-05':54, '2015-06':57, '2015-07':56, '2015-08':44, '2015-09':60, '2015-10':53, '2015-11':57, '2015-12':53, '2016-01':54, '2016-02':56, '2016-03':60, '2016-04':56, '2016-05':59, '2016-06':50, '2016-07':51, '2016-08':49, '2016-09':57, '2016-10':56, '2016-11':59, '2016-12':56, '2017-01':57, '2017-02':54, '2017-03':59, '2017-04':57, '2017-05':60, '2017-06':55, '2017-07':53, '2017-08':45, '2017-09':54, '2017-10':58, '2017-11':56, '2017-12':51, '2018-01':48}
 
-def createHistogram(querystring='', domain='', path_to_file='', show_kranten=False, show_partij=False, program='all', include_normalised=False, time_format='years'):
+# Some counts for calculating the averages in Facebook data per year
+di_fb_months = {'ad': {'2010': 84, '2011': 6038, '2012': 22619, '2013': 32688, '2014': 63710, '2015': 64219, '2016': 47794, '2017': 43979, '2018': 66003}, 'brandpunt': {'2010': 0, '2011': 0, '2012': 0, '2013': 0, '2014': 0, '2015': 76, '2016': 4280, '2017': 39473, '2018': 32515}, 'buitenhof': {'2010': 0, '2011': 0, '2012': 0, '2013': 0, '2014': 0, '2015': 53, '2016': 1899, '2017': 6581, '2018': 9870}, 'dwdd': {'2010': 4369, '2011': 8406, '2012': 12900, '2013': 16699, '2014': 25453, '2015': 43431, '2016': 79813, '2017': 64266, '2018': 41415}, 'eenvandaag': {'2010': 0, '2011': 297, '2012': 1552, '2013': 4373, '2014': 7317, '2015': 23829, '2016': 36092, '2017': 40258, '2018': 56756}, 'eo': {'2010': 12, '2011': 1101, '2012': 11941, '2013': 19690, '2014': 42318, '2015': 51994, '2016': 45382, '2017': 39062, '2018': 32526}, 'jinek': {'2010': 0, '2011': 0, '2012': 0, '2013': 85, '2014': 151, '2015': 2633, '2016': 10473, '2017': 47519, '2018': 43963}, 'nieuwsuur': {'2010': 0, '2011': 97, '2012': 568, '2013': 855, '2014': 1809, '2015': 6735, '2016': 19325, '2017': 30190, '2018': 29095}, 'nos': {'2010': 0, '2011': 259, '2012': 2295, '2013': 1789, '2014': 14575, '2015': 18671, '2016': 39525, '2017': 55520, '2018': 108642}, 'nrc': {'2010': 0, '2011': 0, '2012': 602, '2013': 4163, '2014': 10472, '2015': 10639, '2016': 6671, '2017': 8927, '2018': 10425}, 'politiek24': {'2010': 7, '2011': 340, '2012': 746, '2013': 1537, '2014': 2230, '2015': 2219, '2016': 1188, '2017': 257, '2018': 377}, 'pownews': {'2010': 0, '2011': 100, '2012': 2326, '2013': 39087, '2014': 79524, '2015': 69226, '2016': 86721, '2017': 75175, '2018': 93673}, 'telegraaf': {'2010': 207, '2011': 4626, '2012': 10522, '2013': 63573, '2014': 85062, '2015': 66674, '2016': 55405, '2017': 55324, '2018': 80171}, 'trouw': {'2010': 0, '2011': 4, '2012': 140, '2013': 446, '2014': 4103, '2015': 9163, '2016': 8246, '2017': 7910, '2018': 9015}, 'volkskrant': {'2010': 97, '2011': 2601, '2012': 7416, '2013': 6456, '2014': 16601, '2015': 16674, '2016': 14222, '2017': 24240, '2018': 27355}, 'wnl': {'2010': 0, '2011': 5, '2012': 257, '2013': 251, '2014': 614, '2015': 2179, '2016': 1969, '2017': 49520, '2018': 77639}, 'zembla': {'2010': 129, '2011': 519, '2012': 724, '2013': 1558, '2014': 1883, '2015': 3915, '2016': 7365, '2017': 13390, '2018': 9847}}
 
-	# Domain (politcs, newspapers, tweets) needs to be set to asses the data
-	# Set some column headers
+
+
+def createHistogram(querystring='', domain='', file='', show_kranten=False, show_partij=False, program='all', include_normalised=False, normalise_fb=True, time_format='years'):
+	''' Creates frequency histograms from a range of different csvs:
+	Politiek, Kranten, TV, Facebook, Twitter.
+	Can make stacked bar charts and a normalised line.
+	Works but should be cleaned up later :) '''
+
+	# Domain (politcs, newspapers, tweets) needs to be set to asses the data.
+	# Use this to read specified csvs and set some column headers.
 	filename = domain + '-'
 	if domain.startswith('krant') or domain.startswith('newspaper'):
-		df = pd.read_csv(path_to_file)
+		df = pd.read_csv('data/media/kranten/' + file)
 		time_col = 'date_formatted'
 		text_col = 'full_text'
 	elif domain == 'politiek':
@@ -73,9 +82,9 @@ def createHistogram(querystring='', domain='', path_to_file='', show_kranten=Fal
 	#if querystring != '':
 	print('Filtering data: ' + filename)
 	if domain == 'facebook':
-		print(querystring)
+		#print(querystring)
 		df = getFbDf(querystring)
-		print(df)
+		#print(df)
 		# df[time_col] = [time[:10] for time in df[time_col].tolist()]
 		# print(df[time_col])
 	else:
@@ -100,7 +109,7 @@ def createHistogram(querystring='', domain='', path_to_file='', show_kranten=Fal
 	df_histo = pd.DataFrame()
 	df['date_histo'] = li_dates
 	df_dates = df.groupby(by=['date_histo']).agg(['count'])
-	print(df_dates)
+	#print(df_dates)
 	# Create new list of all dates between start and end date
 	# Sometimes one date has zero counts, and gets skipped by matplotlib
 	li_dates = []
@@ -118,7 +127,7 @@ def createHistogram(querystring='', domain='', path_to_file='', show_kranten=Fal
 				li_check_dates.append(date)
 
 	elif time_format == 'months':
-		print(df_dates)
+		#print(df_dates)
 		d1 = datetime.strptime(df_dates.index[0], "%Y-%m").date()  					# start date
 		d2 = datetime.strptime(df_dates.index[len(df_dates) - 1], "%Y-%m").date()	# end date
 		delta = d2 - d1																# timedelta
@@ -169,7 +178,6 @@ def createHistogram(querystring='', domain='', path_to_file='', show_kranten=Fal
 
 		li_av_count = []
 		for i in range(len(df_histo)):
-			#print(df_histo['count'][i], di_av_counts[df_histo['date'][i]])
 			av_count = (df_histo['count'][i] / di_av_counts[df_histo['date'][i]]) * 100
 			li_av_count.append(av_count)
 
@@ -177,7 +185,7 @@ def createHistogram(querystring='', domain='', path_to_file='', show_kranten=Fal
 
 
 	# If indicated, show only some partijen as a stacked bar graph.
-	if show_partij != False:
+	if domain == 'politiek':
 		li_formatted_partij = []
 		if isinstance(show_partij, int):
 			partij_count = Counter(df['partij'].tolist())
@@ -236,8 +244,20 @@ def createHistogram(querystring='', domain='', path_to_file='', show_kranten=Fal
 	if domain == 'facebook':
 		df['time'] = [date[:endstring] for date in df[time_col].values.tolist()]
 		df = df.groupby(['page_name','time']).size().reset_index()
+		df.columns = ['page_name','time','size']
+
+		# Divide the values by the total amount of FB posts captured from the page that year
+		if normalise_fb:
+			#print(df['page_name'][i],[df.index[i]])
+			li_av_size = []
+			for i, row in df.iterrows():
+				#print(float(row['size']) / float(di_fb_months[row['page_name']][row['time']]) * 100.0)
+				li_av_size.append(float(row['size']) / float(di_fb_months[row['page_name']][row['time']]) * 100.0)
+				print(float(row['size']), float(di_fb_months[row['page_name']][row['time']]))
+			df['size'] = li_av_size
+			print(df['size'])
+
 		df = df.set_index('time')
-		df.columns = ['page_name','size']
 		df.to_csv('data/politiek/streamgraph-data-' + filename + '.csv')
 		df = df.reset_index()
 		df = df.pivot(index='time', columns='page_name', values='size')
@@ -253,25 +273,21 @@ def createHistogram(querystring='', domain='', path_to_file='', show_kranten=Fal
 			df.columns = ['size']
 			df.to_csv('data/media/televisie/streamgraph-data-' + filename + '.csv')
 			df = df.reset_index()
-			df = df.pivot(index='time', columns='page_name', values='size')
+			print(df.columns)
+			df = df.pivot(index='time', columns='program', values='size')
 
 	# Check if there's no dates with zero occurances missing
 	# If that's the case, append a row with zeroes and the
-	# missing date as the index.
+	# missing date as the index. (bit hacky for now, but works)
 	for single_date in li_dates:
 		if single_date not in df.index:
 			df.loc[single_date] = [None] * len(df.columns)
-			# print('Date not in index', single_date)
-			# series = pd.Series([None] * len(df.columns))
-			# series.name = single_date
-			# df.append(series)
-			# print(series)
+
 	df = df.sort_index()
-	print(df.head(10))
+
 	# Save the metadata
 	print('Writing raw data to "' + 'data/histogram-' + filename + '.csv')
 	df.to_csv('data/histograms/histogram-' + filename + '.csv', index=False)
-
 	print('Making histogram...')
 
 	fig, ax = plt.subplots(1,1)
@@ -301,7 +317,6 @@ def createHistogram(querystring='', domain='', path_to_file='', show_kranten=Fal
 	if include_normalised:
 		ax2 = ax.twinx()
 		df_histo.plot(ax=ax2, y='av_count', legend=False, kind='line', linewidth=2, color='#d12d04');
-	
 	#df_histo.plot(ax=ax, stacked=True, y='partij', kind='bar', legend=False, width=.9, color='#52b6dd');
 	#df_histo.plot(ax=ax2, y='av_count', legend=False, kind='line', linewidth=2, color='#d12d04');
 	
@@ -310,8 +325,13 @@ def createHistogram(querystring='', domain='', path_to_file='', show_kranten=Fal
 	ax.set_xticklabels(df.index, rotation='vertical')
 	ax.grid(color='#e5e5e5',linestyle='dashed', linewidth=.6)
 	ax.set_ylabel('Absoluut aantal', color=colors[0])
-	ax.set_xlabel('Jaren')
+	#ax.set_xlabel('Jaren')
 	
+	# Do dome formatting if there's normalised data
+	if domain == 'facebook' and normalise_fb:
+		ax.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
+		ax.set_ylabel('Percentage van totaal verzamelde comments', color=colors[0])
+		filename = filename + '-normalised'
 	if include_normalised:
 		if domain == 'politiek':
 			ylabel = '% van totaal aantal spreekbeurten in TK'
@@ -342,7 +362,10 @@ def createHistogram(querystring='', domain='', path_to_file='', show_kranten=Fal
 	elif domain.startswith('krant'):
 		histo_title = 'Aantal gearchiveerde artikelen in Nederlandse kranten met "' + querystring.replace('|', '" of "') + '"'
 	elif domain == 'facebook':
-		histo_title = 'Aantal comments op de Facebook pagina\'s van Nederlandse actualiteitenprogramma\'s met "' + querystring.replace('|', '" of "') + '"'
+		if normalise_fb:
+			histo_title = 'Genormaliseerd aantal comments op de Facebook pagina\'s van Nederlandse actualiteitenprogramma\'s met "' + querystring.replace('|', '" of "') + '"'
+		else:
+			histo_title = 'Aantal comments op de Facebook pagina\'s van Nederlandse actualiteitenprogramma\'s met "' + querystring.replace('|', '" of "') + '"'
 	elif domain == 'televisie':
 		if isinstance(program, list):
 			program = ', '.join(program)
@@ -416,4 +439,5 @@ if __name__ == '__main__':
 
 	#querystrings = [['nederlandse identiteit','nederlandse waarden'], 'gewone nederlander']
 	#for querystring in querystrings:
-	createHistogram(querystring=['racis'], domain='politiek', time_format='years', show_partij=6, include_normalised=True)
+
+	createHistogram(querystring=['gewone nederlander'], domain='politiek', show_partij=6, time_format='years', include_normalised=True)

@@ -320,9 +320,9 @@ if __name__ == '__main__':
 	#li_years = [[1999],[2000],[2001]]
 	#li_years = [2011,2012,2013,2014,2015,2016,2017,2018]
 
-	querystring = getStem('islam')
-	getTKCollocations(querystring=querystring, li_years=li_years, full_comment=False, ngram_size=1)
+	querystring = getStem('multiculturel')
+	#getTKCollocations(querystring=querystring, li_years=li_years, full_comment=False, ngram_size=1)
 	#getNewspaperCollocations('all-multicultureel-multiculturele-multiculturalisme-withtokens-deduplicated.csv', ngram_size=2, querystring=querystring, li_years=li_years, forbidden_words=['institut','forum'])
-	#getFbCollocations(querystring=querystring, ngram_size=2)
+	getTvCollocations(querystring=['moslim','islam'], ngram_size=1, li_years=[2013, 2014, 2015, 2016, 2017])
 	#querystring = getStem('islam')
 	#getFbCollocations(querystring=querystring, ngram_size=2)

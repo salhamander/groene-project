@@ -1,0 +1,20 @@
+Jaap's selectie
+- 'racis' histo kranten afmaken
+--- Zodat het een cross-media grafiek voor 'racis' kan worden gemaakt.
+- racisme twitter dataset emile?
+
+- Islam bigram rankflow voor alleen vk en nrc maken om inconsitente data te voorkomen? telegraaf/ad apart?
+
+- Politiek 'allochto' bigram rankflow aanpassen naar 3 jaar
+
+
+- Focus op 'Nederlanderschap'
+- Missend: Online data over tijd
+--- 'Neger'
+--- Welke posts zorgen voor de meeste reacties?
+
+--- 'Zwarte' Nederlander op FB?
+--- Sylvana Simons as casus?
+----- Hashtags per maand
+
+
