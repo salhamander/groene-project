@@ -114,7 +114,6 @@ def generateNewspaperTokens(path_to_file):
 	as to retrieve tokens '''
 
 	df = pd.read_csv(path_to_file)
-	df = df
 	li_text = df['full_text'].tolist()
 	
 	all_tokens = []
@@ -132,7 +131,7 @@ def generateNewspaperTokens(path_to_file):
 	all_tokens = generateTokens(all_tokens, stemming=True)
 	df['tokens'] = all_tokens
 	df.to_csv(path_to_file[:-4] + '-withtokens.csv')
-	df.to_csv('C:\\Users\\hagen\\Dropbox\\Universiteit van Amsterdam\\all-allochtoon-allochtoons-allochtoonse-allochtone-allochtonen-withtokens.csv')
+	p.dump(all_tokens, open(path_to_file[:-4] + '-withtokens.p', 'wb'))
 	return all_tokens
 
 def generateTvTokens(path_to_file):
@@ -160,5 +159,5 @@ def generateFbTokens():
 	p.dump(all_tokens, open('data/social_media/fb/tokens/tokens_fb_nl_programmas.p', 'wb'))
 
 if __name__ == '__main__':
-	#generateNewspaperTokens('data/media/kranten/all-multicultureel-multiculturele-multiculturalisme.csv')
-	generateTvTokens('data/media/televisie/all-transcripts.csv')
+	generateNewspaperTokens('data/media/kranten/all-racisme-racistisch-racist.csv')
+	#generateTvTokens('data/media/televisie/all-transcripts.csv')

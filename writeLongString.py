@@ -89,4 +89,4 @@ def writeLongString(querystring='', domain='', file='', text_col='tekst', date_c
 
 if __name__ == '__main__':
 	
-	writeLongString(querystring=['multicultu','multi-cultu','multi cultu'], domain='facebook')
+	writeLongString(querystring=['racist'], domain='facebook')

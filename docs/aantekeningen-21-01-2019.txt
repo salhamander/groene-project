@@ -7,7 +7,6 @@ Jaap's selectie
 
 - Politiek 'allochto' bigram rankflow aanpassen naar 3 jaar
 
-
 - Focus op 'Nederlanderschap'
 - Missend: Online data over tijd
 --- 'Neger'
@@ -16,5 +15,3 @@ Jaap's selectie
 --- 'Zwarte' Nederlander op FB?
 --- Sylvana Simons as casus?
 ----- Hashtags per maand
-
-

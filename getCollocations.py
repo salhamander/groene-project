@@ -8,6 +8,7 @@ import operator
 import pickle as p
 import itertools
 import mysql.connector
+import os
 from datetime import datetime, timedelta
 from collections import OrderedDict, Counter
 from nltk.collocations import *
@@ -41,8 +42,12 @@ def calculateColocation(inputtokens, windowsize, nsize, querystring, full_commen
 		
 		# Filter out forbidden words
 		if forbidden_words != False:
-			forbidden_words_filter = word_filter = lambda w1, w2: any(string in (w1, w2) for string in forbidden_words)
-			finder.apply_ngram_filter(word_filter)
+			forbidden_words_filter = lambda w1, w2: any(string in (w1, w2) for string in forbidden_words)
+			finder.apply_ngram_filter(forbidden_words_filter)
+
+		# Filter out two times the occurance of the same query string
+		duplicate_filter = lambda w1, w2: (w1 in querystring and w2 in querystring)
+		finder.apply_ngram_filter(duplicate_filter)
 
 		finder.apply_freq_filter(min_frequency)
 	#generate trigrams
@@ -144,6 +149,38 @@ def createRankfFlowDf(input_collocations, input_word, ngram_size, li_headers, fi
 	print(df.head())
 	return df
 
+def createStreamgraphDf(df, li_headers, limit=20):
+	''' Converts a Rankflow DataFrame to RAWGraphs
+	streamgraphs-compatible	pandas DataFrame. ''' 
+
+	print('Making a RAWGraphs compatible csv...')
+
+	li_words = []
+	li_values = []
+	li_dates = []
+
+	# Make lists of the words and their frequencies
+	for i, column in enumerate(df.columns):
+		if 'frequency_' in column:
+			for n in range(limit):
+				li_values.append(df.iloc[n][column])
+		elif '20' in column or '19' in column:
+			for n in range(limit):
+				li_words.append(df.iloc[n][column])
+	
+	print(li_values, li_words)
+
+	# Make a list with dates
+	for header in li_headers:
+		for n in range(limit):
+			print(header, n)
+			li_dates.append(header[:4])
+
+	# Write the lists as columns to a DataFrame
+	di_df = {'word': li_words, 'values': li_values, 'dates': li_dates}
+	df = pd.DataFrame(di_df)
+	return df
+
 def getTweetCollocations(word):
 
 	db = mysql.connector.connect(host='localhost',user='root',passwd='',database='actualiteitenprogrammas')
@@ -171,7 +208,7 @@ def getTKCollocations(querystring='', li_years='all', ngram_size=1, window_size=
 	''' Executes the collocation scripts for politiek data. '''
 
 	li_tokens = getPolitiekTokens(contains_word=querystring, years=li_years)
-	print(li_tokens[0])
+	#print(li_tokens[0])
 
 	# Get the collocations per year
 	li_collocations = []
@@ -196,7 +233,7 @@ def getTKCollocations(querystring='', li_years='all', ngram_size=1, window_size=
 
 	df = createRankfFlowDf(li_collocations, querystring, ngram_size, li_headers=columns, filter_words= not full_comment)
 	df.to_csv('data/ngrams/politiek-' + ngram_label + querystring + '.csv')
-
+	createStreamgraphDf(df, columns)
 	# Print out the vergaderingen that mentioned the querystring the most for reference
 	print('Getting vergaderingen mentioning "' + str(querystring) + '" the most.')
 	rank_vergaderingen = rankVergaderingen(querystring)
@@ -205,7 +242,7 @@ def getTKCollocations(querystring='', li_years='all', ngram_size=1, window_size=
 	txtfile_full.write('%s' % rank_vergaderingen)
 
 def getNewspaperCollocations(file, querystring, li_years, ngram_size=1, window_size=3, filter_krant=False, forbidden_words=False):
-	''' Executes the collocation scripts for newspapers '''
+	''' Executes the collocation scripts for newspapers. '''
 	li_collocations = []
 	li_tokens = getKrantTokens('data/media/kranten/' + file, filter_krant=filter_krant, years=li_years)
 	
@@ -226,9 +263,11 @@ def getNewspaperCollocations(file, querystring, li_years, ngram_size=1, window_s
 	elif ngram_size == 2:
 		ngram_label = 'trigrams-'
 	if filter_krant == False:
-		krant = ''
+		krant_label = ''
 	else:
-		krant = '-' + krant
+		krant_label = filter_krant
+		if isinstance(krant_label, list):
+			krant_label = 'OR'.join(krant_label)
 
 	columns = [', '.join(str(x) for x in colnames) for colnames in li_years if isinstance(colnames, list)] + [str(year) for year in li_years if isinstance(year, int)]
 
@@ -237,7 +276,7 @@ def getNewspaperCollocations(file, querystring, li_years, ngram_size=1, window_s
 	if isinstance(querystring, list):
 		querystring = 'OR'.join(querystring)
 
-	df.to_csv('data/ngrams/kranten-' + ngram_label + querystring + '-' + str(window_size) + '.csv')
+	df.to_csv('data/ngrams/kranten-' + ngram_label + querystring + '-' + str(window_size) + krant_label + '.csv')
 
 def getTvCollocations(querystring='', program=False, li_years='all', ngram_size=1, window_size=3, forbidden_words=False, full_comment=False):
 	''' Executes the collocation scripts for TV transcript files '''
@@ -316,9 +355,17 @@ def getFbCollocations(querystring='', li_years='all', ngram_size=1, window_size=
 
 if __name__ == '__main__':
 
+	# for file in os.listdir('data/politiek/handelingen/tokens/'):
+	# 	tokens = p.load(open('data/politiek/handelingen/tokens/' + file, 'rb'))
+	# 	for single_tokens in tokens:	
+	# 		if 'nteerd' and 'islam' in single_tokens:
+	# 			print(single_tokens)
+	# quit()
+	querystring = getStem('sylvana')
 	li_years = [[1995,1996,1997],[1998,1999,2000],[2001,2002,2003],[2004,2005,2006],[2007,2008,2009],[2010,2011,2012],[2013,2014,2015],[2016,2017,2018]]
 	#li_years = [[1999],[2000],[2001]]
-	#getNewspaperCollocations('all-multicultureel-multiculturele-multiculturalisme-withtokens-deduplicated.csv', ngram_size=2, querystring=querystring, li_years=li_years, forbidden_words=['institut','forum'])
-	getTvCollocations(querystring=['moslim','islam'], ngram_size=1, li_years=[2013, 2014, 2015, 2016, 2017])
+	#getTKCollocations(querystring=querystring, li_years=li_years)
+	#getNewspaperCollocations('all-allochtoon-allochtoons-allochtoonse-allochtone-allochtonen-withtokens-deduplicated.csv', ngram_size=1, querystring=querystring, li_years=li_years, filter_krant=['volkskrant','nrc'])
+	#getTvCollocations(querystring=['moslim','islam'], ngram_size=1, li_years=[2013, 2014, 2015, 2016, 2017])
 	#querystring = getStem('islam')
-	#getFbCollocations(querystring=querystring, ngram_size=2)
+	getFbCollocations(querystring=querystring, ngram_size=1, forbidden_words=['simon'])

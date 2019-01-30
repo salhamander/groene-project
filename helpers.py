@@ -4,6 +4,9 @@ import itertools
 import ast
 import sqlite3
 import mysql.connector
+import pymysql
+from sqlalchemy import create_engine
+from datetime import date, datetime, timedelta
 from collections import Counter
 
 # Helper functions for the rest of the code
@@ -96,13 +99,16 @@ def getKrantTokens(file, filter_krant=False, years='all',):
 	Provide a newspaper in `filter_krant` to only get
 	articles from that newspaper. '''
 
+	df = pd.read_csv(file)
+	
 	li_tokens = []
-
 	if 'tokens' not in df.columns:
 		print('Tokenise the newspaper text first with getTokens.py!')
 		quit()
 
 	if filter_krant != False:
+		if isinstance(filter_krant, list):
+			filter_krant = '|'.join(filter_krant)
 		if filter_krant == 'ad':
 			filter_krant = 'dagblad'
 		df = df[df['newspaper'].str.contains(filter_krant, case=False)]
@@ -287,3 +293,71 @@ def getFbDf(querystring='', date=''):
 			df = df[df['comment_published'].str.contains(str(date))]
 
 	return df
+
+def getDateRange(startdate, enddate, time_format=''):
+	''' Creates a list of dates between the end and start date.
+	Useful for filling up 'gaps' in time data, e.g. when plotting
+	counts with matplotlib. '''
+
+	if time_format == '':
+		print('Please provide a `time_format` for getDateRange()')
+		quit()
+
+	endstring = 10
+	if time_format == 'years':
+		endstring = 4
+	elif time_format == 'months':
+		endstring = 7
+	elif time_format == 'days':
+		endstring = 10
+
+	li_dates = []
+
+	if time_format == 'years':
+		d1 = datetime.strptime(startdate, "%Y").date()	 		# start date
+		d2 = datetime.strptime(enddate, "%Y").date()			# end date
+		delta = d2 - d1											# timedelta
+		for i in range(delta.days + 1):
+			date = d1 + timedelta(days=i)
+			date = str(date)[:endstring]
+			if date not in li_dates:
+				li_dates.append(date)
+
+	elif time_format == 'months':
+		d1 = datetime.strptime(startdate, "%Y-%m").date()  		# start date
+		d2 = datetime.strptime(enddate, "%Y-%m").date()			# end date
+		delta = d2 - d1											# timedelta
+		for i in range(delta.days + 1):
+			date = d1 + timedelta(days=i)
+			date = str(date)[:endstring]
+			if date not in li_dates:
+				li_dates.append(date)
+		
+	if time_format == 'days':
+		d1 = datetime.strptime(startdate, "%Y-%m-%d").date()	# start date
+		d2 = datetime.strptime(enddate, "%Y-%m-%d").date()		# end date
+		delta = d2 - d1         								# timedelta
+		for i in range(delta.days + 1):
+			date = d1 + timedelta(days=i)
+			str_date = date.strftime('%Y-%m-%d')
+			li_dates.append(date)
+
+	return li_dates
+
+def addDfToMySQL(path_to_csv, db, table):
+	''' Funtion to add a pandas DataFrame as a table to a MySQL database.
+	:param csv:		Filename for csv
+	:param db:		Name of database to append to
+	:param table:	New table name '''
+
+	# Changing to utf might be necessary
+	# cur.execute("ALTER DATABASE `%s` CHARACTER SET 'utf8' COLLATE 'utf8_unicode_ci'" % dbname)
+
+	print('Writing csv to MySQL table')
+	df = pd.read_csv(path_to_csv, encoding='utf-8')
+
+	engine = create_engine('mysql+pymysql://root@localhost/' + db + '?charset=utf8mb4', echo=False)
+	df.to_sql(name=table, con=engine, if_exists='replace', index=False, chunksize=500)
+
+if __name__	== '__main__':
+	addDfToMySQL('data/social_media/twitter/tcat_racism-20131119-20181220-racisme-nl.csv', 'tweet_collections', 'tweets_nl_racism')

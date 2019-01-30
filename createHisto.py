@@ -6,31 +6,26 @@ import matplotlib.pyplot as plt
 import time
 import re
 import os
-from datetime import date, datetime, timedelta
+import pickle as p
 from collections import OrderedDict, Counter
 from matplotlib.ticker import ScalarFormatter, FormatStrFormatter
-from helpers import getFbDf
+from helpers import *
 
-# Some counts for calculating the averages in parliamentary data per year and months
-li_handelingen_year = ['1995','1996','1997','1998','1999','2000','2001','2002','2003','2004','2005','2006','2007','2008','2009','2010','2011','2012','2013','2014','2015','2016','2017','2018']
-di_spreekbeurten_year = {'1995': 15307, '1996': 29962, '1997': 35065, '1998': 31306, '1999': 27441, '2000': 30259, '2001': 28454, '2002': 27759, '2003': 27340, '2004': 26221, '2005': 29306, '2006': 26912, '2007': 30040, '2008': 39179, '2009': 29565, '2010': 30557, '2011': 56205, '2012': 58427, '2013': 70284, '2014': 67304, '2015': 71281, '2016': 76531, '2017': 60142, '2018': 83588}
-di_spreekbeurten_month = {'1995-09':2099,'1995-10':4559,'1995-11':6167,'1995-12':2482,'1996-01':2039,'1996-02':2180,'1996-03':2422,'1996-04':2688,'1996-05':3429,'1996-06':3598,'1996-07':0,'1996-08':530,'1996-09':1953,'1996-10':7198,'1996-11':3925,'1996-12':0,'1997-01':0,'1997-02':912,'1997-03':2210,'1997-04':2987,'1997-05':3713,'1997-06':5283,'1997-07':0,'1997-08':1326,'1997-09':4483,'1997-10':5093,'1997-11':4805,'1997-12':4253,'1998-01':2985,'1998-02':3514,'1998-03':3377,'1998-04':2773,'1998-05':484,'1998-06':1730,'1998-07':0,'1998-08':939,'1998-09':2263,'1998-10':3757,'1998-11':5886,'1998-12':3598,'1999-01':1663,'1999-02':1064,'1999-03':2881,'1999-04':2565,'1999-05':1509,'1999-06':3669,'1999-07':119,'1999-08':179,'1999-09':3469,'1999-10':2997,'1999-11':4380,'1999-12':2946,'2000-01':2378,'2000-02':2678,'2000-03':2449,'2000-04':1505,'2000-05':2089,'2000-06':3650,'2000-07':0,'2000-08':858,'2000-09':3298,'2000-10':3350,'2000-11':6371,'2000-12':1633,'2001-01':2408,'2001-02':2222,'2001-03':1579,'2001-04':2436,'2001-05':1872,'2001-06':2571,'2001-07':624,'2001-08':0,'2001-09':2394,'2001-10':3948,'2001-11':5709,'2001-12':2691,'2002-01':1887,'2002-02':1489,'2002-03':3134,'2002-04':1907,'2002-05':202,'2002-06':1485,'2002-07':1362,'2002-08':0,'2002-09':3906,'2002-10':3195,'2002-11':5659,'2002-12':3533,'2003-01':237,'2003-02':1910,'2003-03':1926,'2003-04':2638,'2003-05':1159,'2003-06':3036,'2003-07':0,'2003-08':1312,'2003-09':2824,'2003-10':4669,'2003-11':4605,'2003-12':3024,'2004-01':1276,'2004-02':2617,'2004-03':1858,'2004-04':3430,'2004-05':1210,'2004-06':2694,'2004-07':135,'2004-08':249,'2004-09':3610,'2004-10':3080,'2004-11':4113,'2004-12':1949,'2005-01':1304,'2005-02':3760,'2005-03':4080,'2005-04':2038,'2005-05':1344,'2005-06':2890,'2005-07':0,'2005-08':231,'2005-09':3951,'2005-10':2212,'2005-11':5352,'2005-12':2144,'2006-01':1522,'2006-02':3188,'2006-03':3033,'2006-04':2887,'2006-05':1718,'2006-06':3876,'2006-07':211,'2006-08':807,'2006-09':3116,'2006-10':4581,'2006-11':272,'2006-12':1698,'2007-01':1463,'2007-02':1048,'2007-03':2845,'2007-04':2392,'2007-05':1612,'2007-06':4513,'2007-07':552,'2007-08':0,'2007-09':3663,'2007-10':3630,'2007-11':5328,'2007-12':2994,'2008-01':2925,'2008-02':2482,'2008-03':3871,'2008-04':3613,'2008-05':2880,'2008-06':3720,'2008-07':846,'2008-08':0,'2008-09':4794,'2008-10':5160,'2008-11':4864,'2008-12':4024,'2009-01':3220,'2009-02':2541,'2009-03':4015,'2009-04':1253,'2009-05':3089,'2009-06':3657,'2009-07':0,'2009-08':0,'2009-09':0,'2009-10':3128,'2009-11':5361,'2009-12':3301,'2010-01':3547,'2010-02':2956,'2010-03':3862,'2010-04':2415,'2010-05':1592,'2010-06':1351,'2010-07':145,'2010-08':73,'2010-09':2300,'2010-10':2304,'2010-11':6060,'2010-12':3950,'2011-01':2654,'2011-02':2738,'2011-03':4448,'2011-04':3644,'2011-05':2104,'2011-06':4303,'2011-07':0,'2011-08':255,'2011-09':4936,'2011-10':5938,'2011-11':9212,'2011-12':4983,'2012-01':3058,'2012-02':4572,'2012-03':6264,'2012-04':5854,'2012-05':3460,'2012-06':5306,'2012-07':1503,'2012-08':0,'2012-09':987,'2012-10':3860,'2012-11':5073,'2012-12':5988,'2013-01':4595,'2013-02':4783,'2013-03':5493,'2013-04':5790,'2013-05':4468,'2013-06':5918,'2013-07':1355,'2013-08':0,'2013-09':4981,'2013-10':5790,'2013-11':6851,'2013-12':3587,'2014-01':3517,'2014-02':5182,'2014-03':4056,'2014-04':5067,'2014-05':2841,'2014-06':4971,'2014-07':1775,'2014-08':0,'2014-09':6006,'2014-10':5575,'2014-11':7989,'2014-12':3666,'2015-01':3635,'2015-02':4330,'2015-03':4921,'2015-04':6375,'2015-05':2235,'2015-06':6314,'2015-07':1193,'2015-08':301,'2015-09':6831,'2015-10':5884,'2015-11':6488,'2015-12':4816,'2016-01':3939,'2016-02':4534,'2016-03':6961,'2016-04':4662,'2016-05':3892,'2016-06':6832,'2016-07':2040,'2016-08':0,'2016-09':5612,'2016-10':4662,'2016-11':7723,'2016-12':5348,'2017-01':2404,'2017-02':5189,'2017-03':838,'2017-04':2811,'2017-05':3327,'2017-06':4468,'2017-07':1430,'2017-08':0,'2017-09':4294,'2017-10':2300,'2017-11':9858,'2017-12':5217,'2018-01':3922,'2018-02':5667,'2018-03':5298,'2018-04':6392,'2018-05':4478,'2018-06':6844,'2018-07':1974,'2018-08':0,'2018-09':5760,'2018-10':7839,'2018-11':7358}
-
-# Some counts for calculating the averages in TV data per year
-di_tv_counts = {'2013-05':31, '2013-06':51, '2013-07':47, '2013-08':48, '2013-09':53, '2013-10':56, '2013-11':55, '2013-12':49, '2014-01':58, '2014-02':40, '2014-03':56, '2014-04':55, '2014-05':61, '2014-06':39, '2014-07':47, '2014-08':50, '2014-09':58, '2014-10':59, '2014-11':58, '2014-12':50, '2015-01':51, '2015-02':54, '2015-03':58, '2015-04':55, '2015-05':54, '2015-06':57, '2015-07':56, '2015-08':44, '2015-09':60, '2015-10':53, '2015-11':57, '2015-12':53, '2016-01':54, '2016-02':56, '2016-03':60, '2016-04':56, '2016-05':59, '2016-06':50, '2016-07':51, '2016-08':49, '2016-09':57, '2016-10':56, '2016-11':59, '2016-12':56, '2017-01':57, '2017-02':54, '2017-03':59, '2017-04':57, '2017-05':60, '2017-06':55, '2017-07':53, '2017-08':45, '2017-09':54, '2017-10':58, '2017-11':56, '2017-12':51, '2018-01':48}
-
-# Some counts for calculating the averages in Facebook data per year
-di_fb_months = {'ad': {'2010': 84, '2011': 6038, '2012': 22619, '2013': 32688, '2014': 63710, '2015': 64219, '2016': 47794, '2017': 43979, '2018': 66003}, 'brandpunt': {'2010': 0, '2011': 0, '2012': 0, '2013': 0, '2014': 0, '2015': 76, '2016': 4280, '2017': 39473, '2018': 32515}, 'buitenhof': {'2010': 0, '2011': 0, '2012': 0, '2013': 0, '2014': 0, '2015': 53, '2016': 1899, '2017': 6581, '2018': 9870}, 'dwdd': {'2010': 4369, '2011': 8406, '2012': 12900, '2013': 16699, '2014': 25453, '2015': 43431, '2016': 79813, '2017': 64266, '2018': 41415}, 'eenvandaag': {'2010': 0, '2011': 297, '2012': 1552, '2013': 4373, '2014': 7317, '2015': 23829, '2016': 36092, '2017': 40258, '2018': 56756}, 'eo': {'2010': 12, '2011': 1101, '2012': 11941, '2013': 19690, '2014': 42318, '2015': 51994, '2016': 45382, '2017': 39062, '2018': 32526}, 'jinek': {'2010': 0, '2011': 0, '2012': 0, '2013': 85, '2014': 151, '2015': 2633, '2016': 10473, '2017': 47519, '2018': 43963}, 'nieuwsuur': {'2010': 0, '2011': 97, '2012': 568, '2013': 855, '2014': 1809, '2015': 6735, '2016': 19325, '2017': 30190, '2018': 29095}, 'nos': {'2010': 0, '2011': 259, '2012': 2295, '2013': 1789, '2014': 14575, '2015': 18671, '2016': 39525, '2017': 55520, '2018': 108642}, 'nrc': {'2010': 0, '2011': 0, '2012': 602, '2013': 4163, '2014': 10472, '2015': 10639, '2016': 6671, '2017': 8927, '2018': 10425}, 'politiek24': {'2010': 7, '2011': 340, '2012': 746, '2013': 1537, '2014': 2230, '2015': 2219, '2016': 1188, '2017': 257, '2018': 377}, 'pownews': {'2010': 0, '2011': 100, '2012': 2326, '2013': 39087, '2014': 79524, '2015': 69226, '2016': 86721, '2017': 75175, '2018': 93673}, 'telegraaf': {'2010': 207, '2011': 4626, '2012': 10522, '2013': 63573, '2014': 85062, '2015': 66674, '2016': 55405, '2017': 55324, '2018': 80171}, 'trouw': {'2010': 0, '2011': 4, '2012': 140, '2013': 446, '2014': 4103, '2015': 9163, '2016': 8246, '2017': 7910, '2018': 9015}, 'volkskrant': {'2010': 97, '2011': 2601, '2012': 7416, '2013': 6456, '2014': 16601, '2015': 16674, '2016': 14222, '2017': 24240, '2018': 27355}, 'wnl': {'2010': 0, '2011': 5, '2012': 257, '2013': 251, '2014': 614, '2015': 2179, '2016': 1969, '2017': 49520, '2018': 77639}, 'zembla': {'2010': 129, '2011': 519, '2012': 724, '2013': 1558, '2014': 1883, '2015': 3915, '2016': 7365, '2017': 13390, '2018': 9847}}
+# First, load some counts for calculating the averages in datasets
+li_handelingen_year = p.load(open('data/li_handelingen_year.p', 'rb'))
+di_spreekbeurten_year = p.load(open('data/di_spreekbeurten_year.p', 'rb'))
+di_spreekbeurten_month = p.load(open('data/di_spreekbeurten_month.p', 'rb'))
+di_tv_counts = p.load(open('data/di_tv_counts.p', 'rb'))
+di_fb_months = p.load(open('data/di_fb_months.p', 'rb'))
 
 
-
-def createHistogram(querystring='', domain='', file='', show_kranten=False, show_partij=False, program='all', include_normalised=False, normalise_fb=True, time_format='years'):
+def createHistogram(querystring='', domain='', file='', show_kranten=False, show_partij=False, program='all', include_normalised=False, normalise_fb=True, time_format='years', normalise_filecount=False):
 	''' Creates frequency histograms from a range of different csvs:
 	Politiek, Kranten, TV, Facebook, Twitter.
 	Can make stacked bar charts and a normalised line.
 	Works but should be cleaned up later :) '''
 
-	# Domain (politcs, newspapers, tweets) needs to be set to asses the data.
+	# Domain (politics, newspapers, tweets) needs to be set to asses the data.
 	# Use this to read specified csvs and set some column headers.
 	filename = domain + '-'
 	if domain.startswith('krant') or domain.startswith('newspaper'):
@@ -60,7 +55,7 @@ def createHistogram(querystring='', domain='', file='', show_kranten=False, show
 				li_dfs.append(df_program)
 			df = pd.concat(li_dfs, axis=0)
 
-		# Convert dd-mm-yyyy format to yyyy-mm-dd
+		# Convert dd-mm-yyyy format to yyyy-mm-dd if needed
 		if (df[time_col].tolist())[1][2] == '-':
 			df[time_col] = [time[6:] + '-' + time[3:6:] + '-' + time[:3] for time in df[time_col].tolist()]
 	else:
@@ -79,15 +74,12 @@ def createHistogram(querystring='', domain='', file='', show_kranten=False, show
 		filename = filename + querystring
 
 	# Filter on text
-	#if querystring != '':
 	print('Filtering data: ' + filename)
 	if domain == 'facebook':
-		#print(querystring)
 		df = getFbDf(querystring)
-		#print(df)
-		# df[time_col] = [time[:10] for time in df[time_col].tolist()]
-		# print(df[time_col])
 	else:
+		if normalise_filecount:
+			df_full = df
 		df = df[df[text_col].str.contains(querystring, case=False, na=False)]
 	df = df.sort_values(by=[time_col])
 
@@ -109,50 +101,17 @@ def createHistogram(querystring='', domain='', file='', show_kranten=False, show
 	df_histo = pd.DataFrame()
 	df['date_histo'] = li_dates
 	df_dates = df.groupby(by=['date_histo']).agg(['count'])
-	#print(df_dates)
+
 	# Create new list of all dates between start and end date
-	# Sometimes one date has zero counts, and gets skipped by matplotlib
-	li_dates = []
-	li_check_dates = []
-
-	if time_format == 'years':
-		d1 = datetime.strptime(df_dates.index[0], "%Y").date()  				# start date
-		d2 = datetime.strptime(df_dates.index[len(df_dates) - 1], "%Y").date()	# end date
-		delta = d2 - d1															# timedelta
-		for i in range(delta.days + 1):
-			date = d1 + timedelta(days=i)
-			date = str(date)[:endstring]
-			if date not in li_dates:
-				li_dates.append(date)
-				li_check_dates.append(date)
-
-	elif time_format == 'months':
-		#print(df_dates)
-		d1 = datetime.strptime(df_dates.index[0], "%Y-%m").date()  					# start date
-		d2 = datetime.strptime(df_dates.index[len(df_dates) - 1], "%Y-%m").date()	# end date
-		delta = d2 - d1																# timedelta
-		for i in range(delta.days + 1):
-			date = d1 + timedelta(days=i)
-			date = str(date)[:endstring]
-			if date not in li_dates:
-				li_dates.append(date)
-				li_check_dates.append(date)
-		
-	if time_format == 'days':
-		d1 = datetime.strptime(df_dates.index[0], "%Y-%m-%d").date()			# start date
-		d2 = datetime.strptime(df_dates.index[len(df) - 1], "%Y-%m-%d").date()	# end date
-		# print(d1, d2)
-		delta = d2 - d1         												# timedelta
-		for i in range(delta.days + 1):
-			date_object = d1 + timedelta(days=i)
-			str_date = date_object.strftime('%Y-%m-%d')
-			li_dates.append(date_object)
-			li_check_dates.append(str_date)
+	# Necessary since sometimes one date has zero counts, and gets skipped by matplotlib
+	startdate = df_dates.index[0]
+	enddate = df_dates.index[len(df_dates) - 1]
+	li_dates = getDateRange(startdate, enddate, time_format=time_format)
 
 	# Create list of counts. 0 if it does not appears in previous DataFrame
 	li_counts = [0 for i in range(len(li_dates))]
 	li_index_dates = df_dates.index.values.tolist()
-	for index, indate in enumerate(li_check_dates):
+	for index, indate in enumerate(li_dates):
 		# print(indate)
 		if indate in li_index_dates and df_dates.loc[indate][1] > 0:
 			li_counts[index] = df_dates.loc[indate][1]
@@ -166,7 +125,6 @@ def createHistogram(querystring='', domain='', file='', show_kranten=False, show
 	print(li_dates)
 
 	#create list of average counts
-	li_empty_dates = []
 	if include_normalised:
 		if domain == 'politiek':
 			if time_format == 'years':
@@ -183,6 +141,15 @@ def createHistogram(querystring='', domain='', file='', show_kranten=False, show
 
 		df_histo['av_count'] = li_av_count
 
+	# Make a colunn with 
+	if normalise_filecount and domain == 'kranten':
+		li_av_count = []
+		# Divide the counts of the subquery with those of the original file
+		for i, date in enumerate(li_dates):
+			av_count = (df_histo['count'][i] / len(df_full[df_full[time_col].str.contains(date, case=False, na=False)])) * 100
+			li_av_count.append(av_count)
+		df_histo['av_count'] = li_av_count
+		print(li_av_count)
 
 	# If indicated, show only some partijen as a stacked bar graph.
 	if domain == 'politiek':
@@ -314,7 +281,7 @@ def createHistogram(querystring='', domain='', file='', show_kranten=False, show
 	else:
 		df.plot(ax=ax, y='count', kind='bar', width=.9, figsize=(10,7), color=colors[0])
 
-	if include_normalised:
+	if include_normalised or normalise_filecount:
 		ax2 = ax.twinx()
 		df_histo.plot(ax=ax2, y='av_count', legend=False, kind='line', linewidth=2, color='#d12d04');
 	#df_histo.plot(ax=ax, stacked=True, y='partij', kind='bar', legend=False, width=.9, color='#52b6dd');
@@ -325,18 +292,21 @@ def createHistogram(querystring='', domain='', file='', show_kranten=False, show
 	ax.set_xticklabels(df.index, rotation='vertical')
 	ax.grid(color='#e5e5e5',linestyle='dashed', linewidth=.6)
 	ax.set_ylabel('Absoluut aantal', color=colors[0])
-	#ax.set_xlabel('Jaren')
 	
 	# Do dome formatting if there's normalised data
 	if domain == 'facebook' and normalise_fb:
 		ax.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
-		ax.set_ylabel('Percentage van totaal verzamelde comments', color=colors[0])
+		ax.set_ylabel('Percentage van totaal', color=colors[0])
 		filename = filename + '-normalised'
-	if include_normalised:
+	if  domain == 'kranten' and normalise_filecount:
+		filename = filename + '-normalised'
+	if include_normalised or normalise_filecount:
 		if domain == 'politiek':
 			ylabel = '% van totaal aantal spreekbeurten in TK'
 		elif domain == 'televisie':
 			ylabel = '% van totaal aantal verzamelde uitzendingen'
+		elif domain == 'kranten':
+			ylabel = '% van totaal aantal gearchiveerde krantenartikelen met \'islam\' of \'moslim\''
 		ax2.set_ylabel(ylabel, color='#d12d04')
 		ax2.set_ylim(bottom=0)
 
@@ -431,6 +401,108 @@ def createHorizontalHisto(li_values, li_counts, histo_title='Veelvoorkomende woo
 
 	print('Done! Saved .csv of data and .png & .svg in folder \'img/\'')
 
-if __name__ == '__main__':
+def createCollectiveHisto(querystring, file_kranten='', file_twitter='', time_format='years'):
+	''' Creates a multiple line plot of all the media data '''
+
+	# Have different slices of yyyy-mm-dd dates depending on time format
+	endstring = 10
+	if time_format == 'years':
+		endstring = 4
+	elif time_format == 'months':
+		endstring = 7
+	elif time_format == 'days':
+		endstring = 10
+
+	# Load political data
+	print('Grouping political data')
+	df_politiek = pd.read_csv('data/politiek/handelingen/all-handelingen-no-voorzitter.csv')
+	df_politiek = df_politiek[df_politiek['tekst'].str.contains(querystring, case=False, na=False)]
+	df_politiek['date_col'] = [date[:endstring] for date in df_politiek['datum'].tolist()]
+	df_politiek = df_politiek.groupby(['date_col']).count()
+	df_politiek = df_politiek.rename(columns={'tekst':'politiek'})
+	df_politiek = df_politiek[['politiek']]
+
+	# Load TV data (incomplete)
+	# print('Grouping TV data')
+	# df_tv = pd.read_csv('data/media/televisie/all-transcripts.csv')
+	# df_tv = df_tv[df_tv['text'].str.contains(querystring, case=False, na=False)]
+	# if (df_tv['datestamp'].tolist())[1][2] == '-':
+	# 	df_tv['datestamp'] = [time[6:] + '-' + time[3:6:] + '-' + time[:3] for time in df_tv['datestamp'].tolist()]
+	# df_tv['date_col'] = [date[:endstring] for date in df_tv['datestamp'].tolist()]
+	# df_tv = df_tv.groupby(['date_col']).count()
+	# df_tv = df_tv.rename(columns={'text':'TV'})
+	# df_tv = df_tv[['TV']]
+
+	#print(df_tv.head())
+
+	# Load kranten data
+	print('Grouping newspaper data')
+	df_krant = pd.read_csv('data/media/kranten/' + file_kranten)
+	#only volkskrant & nrc
+	df_krant = df_krant[df_krant['newspaper'].str.contains('volkskrant|nrc', case=False, na=False)]
+	df_krant = df_krant[df_krant['full_text'].str.contains(querystring, case=False, na=False)]
+	df_krant['date_col'] = [date[:endstring] for date in df_krant['date_formatted'].tolist()]
+	df_krant = df_krant.groupby(['date_col']).count()
+	df_krant = df_krant.rename(columns={'full_text':'krant'})
+	df_krant = df_krant[['krant']]
+
+	# Load Facebook data
+	#print('Grouping Facebook data')
+	#df_fb = getFbDf(querystring)
+	#print(df_fb.head())
+	#df_fb['date_col'] = [date[:endstring] for date in df_fb['comment_published'].tolist()]
+	#df_fb = df_fb.groupby(['date_col']).count()
+	#df_fb = df_fb.rename(columns={'comment_published':'Facebook'})
+	#df_fb = df_fb[['Facebook']]
+
+	df = pd.concat([df_krant,df_politiek], axis=1)
+	df = df.drop(['2019'])
+	df['politiek'] = df['politiek'].fillna(0)
+	print(df)
+	xtick_labels = df.index.values
+
+	print('Grouping Twitter data')
+	df_twitter = pd.read_csv('data/social_media/twitter/' + file_twitter)
+	df_twitter['date_col'] = [date[:endstring] for date in df_twitter['created_at'].tolist()]
+	df_twitter = df_twitter.groupby(['date_col']).count()
+	df_twitter = df_twitter.rename(columns={'created_at':'Twitter'})
+	df_twitter = df_twitter[['Twitter']]
+	for date in df.index.values:
+		if date not in df_twitter.index:
+			df_twitter.loc[date] = [None] * len(df_twitter.columns)
+	# 2013 is not complete
+	df_twitter.at['2013','Twitter'] = None
+	df_twitter = df_twitter.sort_index()
+	print(df_twitter)
+
+	df = df.reset_index()
+	#li_dates = getDateRange(startdate, enddate, time_format)
+
+	fig, ax = plt.subplots(1,1)
+	fig = plt.figure(figsize=(12, 8))
+	fig.set_dpi(100)
+	ax = fig.add_subplot(111)
+	ax.set_xticklabels(xtick_labels, rotation='vertical')
+
+	df.plot(ax=ax, kind='line', xticks=df.index.values, figsize=(10,7), color='red')
+
+	ax2 = ax.twinx()
+	df_twitter.plot(ax=ax2, legend=False, kind='line', color='#1da1f2')
+	ax.grid(color='#e5e5e5',linestyle='dashed', linewidth=.6)
+	ax.set_ylim(bottom=0)
+	ax2.set_ylim(bottom=0)
+	ax.set_xticklabels(xtick_labels, rotation='vertical')
+
+	#ax.xticks(df.index.values)
+	#ax.set_xticklabels(df.index.values, rotation='vertical')
+	#ax.grid(color='#e5e5e5',linestyle='dashed', linewidth=.6)
+	#ax.set_ylabel('Absoluut aantal')
 	
-	createHistogram(querystring=['racis'], domain='politiek', time_format='years', show_partij=6, include_normalised=True)
+	plt.show()
+	quit()
+
+if __name__ == '__main__':
+
+	#createCollectiveHisto('racisme', file_kranten='all-racisme-racistisch-racist-withtokens-deduplicated.csv', file_twitter='tcat_racism-20131119-20181220-racisme-nl.csv')
+	#createHistogram(querystring=['zwarte piet'], domain='kranten', file='all-racisme-racistisch-racist-withtokens-deduplicated.csv', time_format='years', show_kranten=True, normalise_filecount=True)
+	createHistogram(querystring=[''], domain='politiek', time_format='years', show_partij=8)

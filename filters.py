@@ -61,4 +61,5 @@ def deduplicateKrant(file):
 
 
 if __name__ == '__main__':
-	deduplicateKrant('data/media/kranten/all-multicultureel-multiculturele-multiculturalisme-withtokens.csv')
+
+	deduplicateKrant('data/media/kranten/all-racisme-racistisch-racist-withtokens.csv')
